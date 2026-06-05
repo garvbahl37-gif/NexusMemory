@@ -9,6 +9,12 @@ import {
   ChevronDown,
   Menu,
   X,
+  Sparkles,
+  FileText,
+  History,
+  ArrowUpRight,
+  ShieldCheck,
+  Gauge,
 } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
@@ -95,30 +101,42 @@ export default function ChatWindow({
     setShowScrollButton(distanceFromBottom > 200);
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isStreaming) return;
+  // Send arbitrary text (used by the input bar AND the welcome cards).
+  const sendText = async (text) => {
+    const message = (text || "").trim();
+    if (!message || isStreaming) return;
 
-    const message = input.trim();
-    setInput("");
-
-    // Auto-resize textarea back to single line
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
-
-    // If no session exists yet, create one NOW and pass it directly
+    // Create a session on the fly if needed, and pass it directly so the
+    // first message isn't lost to a not-yet-propagated state update.
     let activeSessionId = sessionId;
     if (!activeSessionId) {
       activeSessionId = onNewSession();
-      console.log("Created new session:", activeSessionId);
     }
 
-    // Pass activeSessionId as override so sendMessage uses it immediately
-    // (React state update for sessionId may not have propagated yet)
     await sendMessage(message, selectedModel, activeSessionId);
-
-    // Refresh memories after a short delay
     setTimeout(() => loadMemories(), 2500);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isStreaming) return;
+    const message = input.trim();
+    setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+    await sendText(message);
+  };
+
+  // Welcome-screen suggestion cards.
+  const handleSuggestion = (s) => {
+    if (isStreaming) return;
+    if (s.action === "upload") {
+      // Spin up a session and reveal the upload panel.
+      if (!sessionId) onNewSession();
+      setShowUpload(true);
+      return;
+    }
+    sendText(s.prompt);
   };
 
   const handleKeyDown = (e) => {
@@ -149,8 +167,9 @@ export default function ChatWindow({
           memoryCount={memories.length}
           sessionId={sessionId}
         />
-        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-24">
-          <WelcomeScreen />
+        <div className="relative flex-1 flex flex-col items-center justify-center px-6 pb-24 overflow-hidden">
+          <WelcomeAmbient />
+          <WelcomeScreen onSuggestion={handleSuggestion} />
         </div>
         <InputBar
           input={input}
@@ -466,60 +485,219 @@ function InputBar({
 
         {/* Bottom hint */}
         <p className="text-xs text-nexus-muted text-center mt-2 hidden sm:block">
-          Nexus Memory uses local AI via Ollama — your data stays private.
+          Nexus Memory · lightning-fast responses · remembers you across sessions
         </p>
       </div>
     </div>
   );
 }
 
-function WelcomeScreen() {
+// Animated ambient backdrop behind the welcome content — drifting aurora
+// orbs and a masked grid for depth.
+function WelcomeAmbient() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <motion.div
+        className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-indigo-600/20 blur-[90px]"
+        animate={{ x: [0, 50, 0], y: [0, 35, 0] }}
+        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute top-1/4 -right-28 h-96 w-96 rounded-full bg-cyan-500/15 blur-[100px]"
+        animate={{ x: [0, -60, 0], y: [0, 45, 0] }}
+        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute -bottom-20 left-1/3 h-80 w-80 rounded-full bg-fuchsia-600/15 blur-[90px]"
+        animate={{ x: [0, 35, 0], y: [0, -30, 0] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <div className="absolute inset-0 opacity-[0.12] [background:linear-gradient(rgba(99,102,241,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.5)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)] [-webkit-mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]" />
+    </div>
+  );
+}
+
+function WelcomeScreen({ onSuggestion }) {
   const suggestions = [
-    "What's your name and what can you do?",
-    "My favorite framework is FastAPI — remember that.",
-    "Upload a PDF and I'll answer questions from it.",
-    "What do you remember about me from before?",
+    {
+      icon: Sparkles,
+      label: "Get started",
+      prompt: "What's your name and what can you do?",
+      action: "send",
+      accent: "from-indigo-500 to-purple-600",
+      glow: "group-hover:shadow-indigo-500/40",
+    },
+    {
+      icon: Brain,
+      label: "Teach me a fact",
+      prompt: "My favorite framework is FastAPI — remember that.",
+      action: "send",
+      accent: "from-fuchsia-500 to-pink-600",
+      glow: "group-hover:shadow-fuchsia-500/40",
+    },
+    {
+      icon: FileText,
+      label: "Chat with a PDF",
+      prompt: "Upload a PDF and I'll answer questions from it.",
+      action: "upload",
+      accent: "from-cyan-500 to-blue-600",
+      glow: "group-hover:shadow-cyan-500/40",
+    },
+    {
+      icon: History,
+      label: "Recall memory",
+      prompt: "What do you remember about me from before?",
+      action: "send",
+      accent: "from-emerald-500 to-teal-600",
+      glow: "group-hover:shadow-emerald-500/40",
+    },
+  ];
+
+  const features = [
+    { icon: Brain, text: "Remembers you" },
+    { icon: FileText, text: "Reads your docs" },
+    { icon: Gauge, text: "Lightning fast" },
+    { icon: ShieldCheck, text: "Private memory" },
   ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      className="text-center max-w-lg w-full"
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      className="relative z-10 text-center max-w-2xl w-full"
     >
-      <div
-        className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600
-                      flex items-center justify-center mx-auto mb-6 shadow-2xl
-                      shadow-indigo-500/20"
-      >
-        <Zap className="w-8 h-8 text-white" />
+      {/* Animated logo */}
+      <div className="relative mx-auto mb-7 h-20 w-20">
+        <motion.div
+          className="absolute -inset-4 rounded-full bg-nexus-accent/20 blur-2xl"
+          animate={{ opacity: [0.35, 0.75, 0.35], scale: [1, 1.15, 1] }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute inset-0 rounded-3xl border border-nexus-accent/30"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="absolute -inset-1 rounded-[1.4rem] border border-cyan-400/20"
+          animate={{ rotate: -360 }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-500 shadow-2xl shadow-indigo-500/30"
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Zap className="h-9 w-9 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.85)]" />
+        </motion.div>
       </div>
 
-      <h1 className="text-2xl font-bold text-nexus-text mb-2">
+      {/* Status pill */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 }}
+        className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1"
+      >
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        </span>
+        <span className="text-[11px] font-medium tracking-wide text-emerald-300/90">
+          Online · Groq Llama 3.3
+        </span>
+      </motion.div>
+
+      <h1 className="text-3xl sm:text-4xl font-bold text-nexus-text mb-3 tracking-tight">
         Welcome to <span className="gradient-text">Nexus Memory</span>
       </h1>
 
-      <p className="text-nexus-muted text-sm mb-8 leading-relaxed">
-        A local AI assistant that remembers you across sessions, answers
-        questions from your documents, and runs entirely on your machine.
+      <p className="text-nexus-muted text-sm sm:text-base mb-6 leading-relaxed max-w-md mx-auto">
+        An AI assistant that <span className="text-nexus-text/90">remembers you</span>,
+        answers from <span className="text-nexus-text/90">your documents</span>, and
+        replies in an instant.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {suggestions.map((suggestion, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.08 }}
-            className="nexus-card p-3 text-left cursor-default
-                       hover:border-nexus-accent/40 transition-colors"
-          >
-            <p className="text-xs text-nexus-muted leading-relaxed">
-              {suggestion}
-            </p>
-          </motion.div>
-        ))}
+      {/* Feature pills */}
+      <div className="mb-9 flex flex-wrap items-center justify-center gap-2">
+        {features.map((f, i) => {
+          const Icon = f.icon;
+          return (
+            <motion.span
+              key={f.text}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 + i * 0.06 }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-nexus-border/70 bg-nexus-card/50 px-3 py-1 text-[11px] text-nexus-muted backdrop-blur-sm"
+            >
+              <Icon className="h-3 w-3 text-nexus-accent-light" />
+              {f.text}
+            </motion.span>
+          );
+        })}
       </div>
+
+      {/* Premium suggestion cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+        {suggestions.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <motion.button
+              key={i}
+              type="button"
+              onClick={() => onSuggestion(s)}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: 0.5 + i * 0.09,
+                duration: 0.5,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              whileHover={{ y: -4, scale: 1.015 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative overflow-hidden rounded-2xl p-[1px]
+                         bg-gradient-to-br from-white/10 to-white/[0.02]
+                         transition-all duration-300
+                         hover:from-nexus-accent/60 hover:to-cyan-400/30"
+            >
+              <div
+                className={`relative flex h-full items-start gap-3 rounded-2xl
+                            bg-nexus-card/80 p-4 backdrop-blur-xl
+                            shadow-lg shadow-black/20 transition-shadow duration-300 ${s.glow}`}
+              >
+                {/* Shine sweep on hover */}
+                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+
+                {/* Icon tile */}
+                <div
+                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center
+                              rounded-xl bg-gradient-to-br ${s.accent}
+                              shadow-md transition-transform duration-300 group-hover:scale-110`}
+                >
+                  <Icon className="h-4 w-4 text-white" />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-nexus-accent-light">
+                      {s.label}
+                    </span>
+                    <ArrowUpRight className="h-3 w-3 text-nexus-muted transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-cyan-300" />
+                  </div>
+                  <p className="mt-1 text-sm leading-snug text-nexus-text/90">
+                    {s.prompt}
+                  </p>
+                </div>
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      <p className="mt-7 text-[11px] text-nexus-muted/60">
+        Pick one to begin, or just start typing below ↓
+      </p>
     </motion.div>
   );
 }
