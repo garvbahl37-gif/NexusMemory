@@ -1,17 +1,11 @@
 FROM python:3.11-slim
 
-# ── System deps + Ollama ─────────────────────────────────────────────
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl ca-certificates zstd \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -fsSL https://ollama.com/install.sh | sh
-
-# ── Non-root user (HF Spaces runs as uid 1000) ───────────────────────
+# Non-root user (HF Spaces runs as uid 1000)
 RUN useradd -m -u 1000 user
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH \
-    OLLAMA_HOST=0.0.0.0:11434 \
-    OLLAMA_MODELS=/home/user/.ollama/models
+    HF_HOME=/home/user/.cache/huggingface \
+    SENTENCE_TRANSFORMERS_HOME=/home/user/.cache/sentence-transformers
 
 WORKDIR /home/user/app
 

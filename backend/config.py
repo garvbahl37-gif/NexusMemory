@@ -22,6 +22,15 @@ class Settings(BaseSettings):
     OLLAMA_MODEL:          str = "llama3"
     OLLAMA_EMBEDDING_MODEL: str = "nomic-embed-text"
 
+    # Groq (fast, free hosted inference). When GROQ_API_KEY is set, chat uses
+    # Groq instead of Ollama. Get a free key at https://console.groq.com
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL:   str = "llama-3.1-8b-instant"
+
+    # Run embeddings locally on CPU (no Ollama needed). Fast for short texts.
+    USE_LOCAL_EMBEDDINGS: bool = True
+    LOCAL_EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+
     BASE_DIR:     Path = Path(__file__).parent
     UPLOAD_DIR:   Path = Path(__file__).parent / "uploads"
     CHROMA_DIR:   Path = Path(__file__).parent / "chroma_db"

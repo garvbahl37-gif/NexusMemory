@@ -20,7 +20,7 @@ import logging
 from config import settings
 from database import init_db
 from routes import chat, upload, memory
-from services.llm import check_ollama_health
+from services.llm import check_llm_health
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,13 +40,14 @@ async def lifespan(app: FastAPI):
     init_db()
     logger.info("✅ Database initialized")
 
-    # Check Ollama health
-    health = await check_ollama_health()
+    # Check LLM provider health (Groq or Ollama)
+    health = await check_llm_health()
     if health["status"] == "healthy":
-        logger.info(f"✅ Ollama connected | Models: {health['models']}")
+        provider = health.get("provider", "ollama")
+        logger.info(f"✅ LLM ready ({provider}) | Models: {health['models']}")
     else:
-        logger.warning(f"⚠️  Ollama check failed: {health.get('error')}")
-        logger.warning("   Ensure Ollama is running: ollama serve")
+        logger.warning(f"⚠️  LLM check failed: {health.get('error')}")
+        logger.warning("   Set GROQ_API_KEY, or run Ollama: ollama serve")
 
     logger.info(f"✅ Nexus Memory ready on http://{settings.HOST}:{settings.PORT}")
 
@@ -94,11 +95,11 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    ollama_status = await check_ollama_health()
+    llm_status = await check_llm_health()
     return {
         "api": "healthy",
-        "ollama": ollama_status,
-        "model": settings.OLLAMA_MODEL,
+        "ollama": llm_status,  # key kept for frontend compatibility
+        "model": llm_status.get("current_model"),
     }
 
 
