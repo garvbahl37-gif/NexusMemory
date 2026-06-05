@@ -300,8 +300,13 @@ export default function Sidebar({
       {/* ── Footer Status ───────────────────────────────────── */}
       <div className="px-4 py-3 border-t border-nexus-border flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-nexus-success animate-pulse-slow" />
-          <span className="text-xs text-nexus-muted">Ollama connected</span>
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          </span>
+          <span className="text-xs text-nexus-muted">
+            Online · <span className="text-nexus-text/80">Groq Llama 3.3</span>
+          </span>
         </div>
       </div>
     </div>

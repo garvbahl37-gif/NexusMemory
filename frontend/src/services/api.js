@@ -4,11 +4,31 @@ import axios from "axios";
 // falls back to the local dev server.
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+// Stable per-browser client id so each visitor only sees their OWN chats.
+// Persisted in localStorage and sent on every request as X-Client-Id.
+function getClientId() {
+  try {
+    let id = localStorage.getItem("nexus_client_id");
+    if (!id) {
+      id =
+        (crypto?.randomUUID && crypto.randomUUID()) ||
+        `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem("nexus_client_id", id);
+    }
+    return id;
+  } catch {
+    return "anonymous";
+  }
+}
+
+export const CLIENT_ID = getClientId();
+
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
+    "X-Client-Id": CLIENT_ID,
   },
 });
 
@@ -44,7 +64,10 @@ export async function sendChatMessage({
 
   const response = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Client-Id": CLIENT_ID,
+    },
     body: JSON.stringify(payload),
   });
 

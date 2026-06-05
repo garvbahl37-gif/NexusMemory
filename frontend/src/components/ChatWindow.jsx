@@ -167,9 +167,15 @@ export default function ChatWindow({
           memoryCount={memories.length}
           sessionId={sessionId}
         />
-        <div className="relative flex-1 flex flex-col items-center justify-center px-6 pb-24 overflow-hidden">
+        <div className="relative flex-1 flex overflow-hidden">
           <WelcomeAmbient />
-          <WelcomeScreen onSuggestion={handleSuggestion} />
+          {/* Scroll-safe centering: centers when there's room, scrolls (top
+              reachable) when content is taller than the viewport. */}
+          <div className="relative z-10 flex-1 overflow-y-auto">
+            <div className="min-h-full flex flex-col items-center justify-center px-6 py-10">
+              <WelcomeScreen onSuggestion={handleSuggestion} />
+            </div>
+          </div>
         </div>
         <InputBar
           input={input}
