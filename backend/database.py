@@ -31,6 +31,9 @@ class ChatSession(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String, unique=True, index=True)
+    # Per-browser owner id (sent by the client). Scopes sessions so each
+    # visitor only sees their own chats — no cross-user leakage.
+    client_id = Column(String, index=True, nullable=True)
     title = Column(String, default="New Chat")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

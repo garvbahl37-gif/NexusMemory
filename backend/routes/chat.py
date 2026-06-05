@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -54,6 +54,7 @@ class ChatResponse(BaseModel):
 async def chat(
     request: ChatRequest,
     db: Session = Depends(get_db),
+    x_client_id: Optional[str] = Header(default=None),
 ):
     # Create or get session
     session_id = request.session_id or str(uuid.uuid4())
@@ -65,6 +66,7 @@ async def chat(
     if not session:
         session = ChatSession(
             session_id=session_id,
+            client_id=x_client_id,
             title=request.message[:40] + "..." if len(request.message) > 40 else request.message,
         )
         db.add(session)
@@ -258,12 +260,20 @@ async def chat(
 
 
 @router.get("/chat/sessions")
-async def get_sessions(db: Session = Depends(get_db)):
-    """Get all chat sessions."""
+async def get_sessions(
+    db: Session = Depends(get_db),
+    x_client_id: Optional[str] = Header(default=None),
+):
+    """Get chat sessions for THIS client only (per-browser isolation)."""
+    # Without a client id, return nothing rather than leaking other users' chats.
+    if not x_client_id:
+        return []
+
     sessions = (
         db.query(ChatSession)
+        .filter(ChatSession.client_id == x_client_id)
         .order_by(ChatSession.updated_at.desc())
-        .limit(20)
+        .limit(50)
         .all()
     )
     return [
@@ -277,12 +287,25 @@ async def get_sessions(db: Session = Depends(get_db)):
     ]
 
 
+def _assert_owner(db, session_id, x_client_id):
+    """Block access to a session that belongs to a different client."""
+    sess = (
+        db.query(ChatSession)
+        .filter(ChatSession.session_id == session_id)
+        .first()
+    )
+    if sess and sess.client_id and x_client_id and sess.client_id != x_client_id:
+        raise HTTPException(status_code=403, detail="Not your session")
+
+
 @router.get("/chat/sessions/{session_id}/messages")
 async def get_session_messages(
     session_id: str,
     db: Session = Depends(get_db),
+    x_client_id: Optional[str] = Header(default=None),
 ):
-    """Get all messages for a session."""
+    """Get all messages for a session (only if it's yours)."""
+    _assert_owner(db, session_id, x_client_id)
     messages = (
         db.query(ChatMessage)
         .filter(ChatMessage.session_id == session_id)
@@ -304,8 +327,10 @@ async def get_session_messages(
 async def delete_session(
     session_id: str,
     db: Session = Depends(get_db),
+    x_client_id: Optional[str] = Header(default=None),
 ):
-    """Delete a chat session and its messages."""
+    """Delete a chat session and its messages (only if it's yours)."""
+    _assert_owner(db, session_id, x_client_id)
     db.query(ChatMessage).filter(
         ChatMessage.session_id == session_id
     ).delete()
