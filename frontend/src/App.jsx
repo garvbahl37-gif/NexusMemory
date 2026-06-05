@@ -3,10 +3,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 import Sidebar from "./components/Sidebar";
 import ChatWindow from "./components/ChatWindow";
+import CinematicLoader from "./components/CinematicLoader";
 
 export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [booting, setBooting] = useState(true);
 
   const handleNewChat = useCallback(() => {
     setCurrentSessionId(null);
@@ -29,6 +31,13 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-nexus-bg">
+      {/* Cinematic boot sequence on entry */}
+      <AnimatePresence>
+        {booting && (
+          <CinematicLoader key="loader" onComplete={() => setBooting(false)} />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar — desktop always visible, mobile overlay */}
       <>
         {/* Desktop sidebar */}
