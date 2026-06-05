@@ -30,7 +30,7 @@ export default function ChatWindow({
   onSidebarToggle,
 }) {
   const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState("llama3");
+  const [selectedModel, setSelectedModel] = useState("llama-3.3-70b-versatile");
   const [showUpload, setShowUpload] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [memories, setMemories] = useState([]);
@@ -339,8 +339,8 @@ function TopBar({
   return (
     <div
       className="flex items-center justify-between px-4 py-3
-                    border-b border-nexus-border flex-shrink-0
-                    bg-nexus-surface/80 backdrop-blur-sm
+                    border-b border-nexus-border/60 flex-shrink-0
+                    bg-nexus-surface/70 backdrop-blur-xl
                     min-w-0 overflow-hidden"
     >
       {/* Left side */}
@@ -355,20 +355,24 @@ function TopBar({
           <Menu className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2.5 flex-shrink-0">
           <div
-            className="w-6 h-6 rounded-lg bg-gradient-to-br
-                          from-indigo-500 to-purple-600
-                          flex items-center justify-center flex-shrink-0"
+            className="relative w-8 h-8 rounded-xl bg-gradient-to-br
+                          from-indigo-500 via-purple-500 to-cyan-500
+                          flex items-center justify-center flex-shrink-0
+                          shadow-lg shadow-indigo-500/30 ring-1 ring-white/10"
           >
-            <Zap className="w-3 h-3 text-white" />
+            <Zap className="w-4 h-4 text-white" />
           </div>
-          <span
-            className="text-sm font-semibold text-nexus-text
-                           hidden sm:block whitespace-nowrap"
-          >
-            Nexus Memory
-          </span>
+          <div className="hidden sm:flex flex-col leading-none">
+            <span className="text-sm font-semibold gradient-text whitespace-nowrap">
+              Nexus Memory
+            </span>
+            <span className="mt-1 flex items-center gap-1 text-[10px] text-nexus-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+              online
+            </span>
+          </div>
         </div>
       </div>
 
@@ -421,76 +425,77 @@ function InputBar({
   onUploadComplete,
 }) {
   return (
-    <div
-      className="flex-shrink-0 border-t border-nexus-border bg-nexus-surface/80
-                    backdrop-blur-sm px-4 py-3"
-    >
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-end gap-2">
-          {/* Upload toggle */}
-          <button
-            onClick={() => setShowUpload(!showUpload)}
-            disabled={!sessionId}
-            title={sessionId ? "Upload document" : "Start a chat first"}
-            className={`p-2.5 rounded-xl border transition-all duration-200 flex-shrink-0
-                         disabled:opacity-40 disabled:cursor-not-allowed mb-0.5
-                         ${
-                           showUpload
-                             ? "bg-nexus-accent/10 border-nexus-accent/40 text-nexus-accent"
-                             : "border-nexus-border text-nexus-muted hover:text-nexus-text hover:border-nexus-accent/40"
-                         }`}
-          >
-            <Paperclip className="w-4 h-4" />
-          </button>
+    <div className="flex-shrink-0 border-t border-nexus-border/60 bg-nexus-surface/70 backdrop-blur-xl px-4 py-4">
+      <div className="max-w-3xl mx-auto">
+        {/* Premium input capsule — gradient border that lights up on focus */}
+        <div
+          className="group relative rounded-2xl p-[1px] transition-all duration-300
+                     bg-gradient-to-r from-white/10 via-white/[0.06] to-white/10
+                     focus-within:from-nexus-accent/70 focus-within:via-purple-500/40 focus-within:to-cyan-400/60
+                     focus-within:shadow-[0_0_34px_-8px_rgba(99,102,241,0.55)]"
+        >
+          <div className="flex items-end gap-1.5 rounded-2xl bg-nexus-card/90 backdrop-blur-xl px-2 py-1.5">
+            {/* Upload toggle */}
+            <button
+              onClick={() => setShowUpload(!showUpload)}
+              disabled={!sessionId}
+              title={sessionId ? "Upload document" : "Start a chat first"}
+              className={`mb-1 flex-shrink-0 rounded-xl p-2 transition-all duration-200
+                          disabled:cursor-not-allowed disabled:opacity-30
+                          ${
+                            showUpload
+                              ? "bg-nexus-accent/15 text-nexus-accent-light"
+                              : "text-nexus-muted hover:bg-white/5 hover:text-nexus-accent-light"
+                          }`}
+            >
+              <Paperclip className="h-[18px] w-[18px]" />
+            </button>
 
-          {/* Textarea */}
-          <div className="flex-1 relative">
+            {/* Textarea */}
             <textarea
               ref={textareaRef}
               value={input}
               onChange={setInput}
               onKeyDown={onKeyDown}
-              placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
+              placeholder="Ask anything…  ·  Enter to send, Shift+Enter for newline"
               rows={1}
               disabled={isStreaming}
-              className="w-full nexus-input resize-none py-3 pr-12 text-sm
-                         max-h-40 leading-relaxed disabled:opacity-60
-                         disabled:cursor-not-allowed"
-              style={{ minHeight: "48px" }}
+              className="max-h-40 flex-1 resize-none border-0 bg-transparent py-2.5 text-sm
+                         leading-relaxed text-nexus-text placeholder-nexus-muted/70
+                         outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ minHeight: "44px" }}
             />
 
-            {/* Char counter (optional) */}
+            {/* Char counter */}
             {input.length > 500 && (
-              <span className="absolute bottom-2 right-14 text-xs text-nexus-muted">
+              <span className="mb-2 self-center text-[10px] text-nexus-muted">
                 {input.length}
               </span>
             )}
-          </div>
 
-          {/* Send button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onSend}
-            disabled={!input.trim() || isStreaming}
-            className="p-2.5 rounded-xl bg-nexus-accent text-white
-                       disabled:opacity-40 disabled:cursor-not-allowed
-                       hover:bg-nexus-accent-light transition-all duration-200
-                       flex-shrink-0 mb-0.5 shadow-lg shadow-nexus-accent/20"
-          >
-            {isStreaming ? (
-              <div
-                className="w-4 h-4 border-2 border-white/30 border-t-white
-                              rounded-full animate-spin"
-              />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </motion.button>
+            {/* Send button */}
+            <motion.button
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={onSend}
+              disabled={!input.trim() || isStreaming}
+              className="mb-0.5 flex-shrink-0 rounded-xl p-2.5 text-white transition-all duration-200
+                         bg-gradient-to-br from-nexus-accent to-purple-600
+                         shadow-lg shadow-nexus-accent/30
+                         hover:shadow-nexus-accent/50 hover:brightness-110
+                         disabled:cursor-not-allowed disabled:from-nexus-border disabled:to-nexus-border disabled:opacity-50 disabled:shadow-none"
+            >
+              {isStreaming ? (
+                <div className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <Send className="h-[18px] w-[18px]" />
+              )}
+            </motion.button>
+          </div>
         </div>
 
         {/* Bottom hint */}
-        <p className="text-xs text-nexus-muted text-center mt-2 hidden sm:block">
+        <p className="mt-2.5 hidden text-center text-[11px] text-nexus-muted/70 sm:block">
           Nexus Memory · lightning-fast responses · remembers you across sessions
         </p>
       </div>

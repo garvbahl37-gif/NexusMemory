@@ -86,10 +86,10 @@ export default function Sidebar({
       <div className="flex items-center justify-between px-4 py-4 border-b border-nexus-border flex-shrink-0">
         <div className="flex items-center gap-2">
           <div
-            className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600
-                          flex items-center justify-center shadow-lg"
+            className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-500
+                          flex items-center justify-center shadow-lg shadow-indigo-500/30 ring-1 ring-white/10"
           >
-            <Zap className="w-3.5 h-3.5 text-white" />
+            <Zap className="w-4 h-4 text-white" />
           </div>
           <div>
             <span className="font-semibold text-sm gradient-text">
@@ -117,18 +117,20 @@ export default function Sidebar({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={onNewChat}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5
-                     rounded-lg bg-nexus-accent/10 border border-nexus-accent/30
-                     text-nexus-accent-light text-sm font-medium
-                     hover:bg-nexus-accent/20 transition-all duration-200"
+          className="group w-full flex items-center justify-center gap-2 px-3 py-2.5
+                     rounded-xl bg-gradient-to-r from-nexus-accent to-purple-600
+                     text-white text-sm font-medium ring-1 ring-white/10
+                     shadow-lg shadow-nexus-accent/25
+                     hover:shadow-nexus-accent/45 hover:brightness-110
+                     transition-all duration-200"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
           New Chat
         </motion.button>
       </div>
 
       {/* ── Tabs ───────────────────────────────────────────── */}
-      <div className="flex px-3 gap-1 mb-2 flex-shrink-0">
+      <div className="mx-3 mb-3 flex gap-1 rounded-xl border border-nexus-border/50 bg-nexus-card/40 p-1 flex-shrink-0">
         {[
           { id: "chats", icon: MessageSquare, label: "Chats" },
           {
@@ -144,7 +146,7 @@ export default function Sidebar({
                          rounded-lg text-xs font-medium transition-all duration-200
                          ${
                            activeTab === tab.id
-                             ? "bg-nexus-card text-nexus-text border border-nexus-border"
+                             ? "bg-nexus-card text-nexus-text shadow-sm border border-nexus-border/70"
                              : "text-nexus-muted hover:text-nexus-text"
                          }`}
           >
@@ -168,13 +170,15 @@ export default function Sidebar({
               className="space-y-1"
             >
               {sessions.length === 0 ? (
-                <div className="text-center py-10">
-                  <MessageSquare className="w-8 h-8 text-nexus-border mx-auto mb-2" />
-                  <p className="text-xs text-nexus-muted">
-                    No conversations yet.
+                <div className="text-center py-12">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-nexus-border/60 bg-gradient-to-br from-nexus-card to-nexus-surface shadow-inner">
+                    <MessageSquare className="w-5 h-5 text-nexus-accent-light/70" />
+                  </div>
+                  <p className="text-xs font-medium text-nexus-text/80">
+                    No conversations yet
                   </p>
-                  <p className="text-xs text-nexus-muted mt-1">
-                    Start chatting below!
+                  <p className="text-[11px] text-nexus-muted mt-1">
+                    Start chatting below to begin
                   </p>
                 </div>
               ) : (

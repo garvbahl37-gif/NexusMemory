@@ -4,7 +4,19 @@ import { Cpu, ChevronDown, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
-const FALLBACK_MODELS = ["llama3", "mistral", "llama3.1", "phi3"];
+const FALLBACK_MODELS = [
+  "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant",
+  "gemma2-9b-it",
+];
+
+// Friendly display names for known models.
+const PRETTY = {
+  "llama-3.3-70b-versatile": "Llama 3.3 70B",
+  "llama-3.1-8b-instant": "Llama 3.1 8B",
+  "gemma2-9b-it": "Gemma 2 9B",
+};
+const pretty = (m) => PRETTY[m] || m;
 
 export default function ModelSelector({ value, onChange }) {
   const [models, setModels] = useState(FALLBACK_MODELS);
@@ -103,7 +115,7 @@ export default function ModelSelector({ value, onChange }) {
     }
   };
 
-  const selectedLabel = value || "llama3";
+  const selectedLabel = pretty(value || "llama-3.3-70b-versatile");
 
   // The dropdown rendered via portal at body level
   const DropdownPortal = () =>
@@ -137,12 +149,16 @@ export default function ModelSelector({ value, onChange }) {
                     onChange(model);
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center justify-between
+                  className={`w-full flex items-center justify-between
                              gap-2 px-2.5 py-2 rounded-lg text-left
-                             text-xs text-nexus-text
-                             hover:bg-nexus-surface transition-colors"
+                             text-xs transition-colors
+                             ${
+                               value === model
+                                 ? "bg-nexus-accent/10 text-nexus-accent-light"
+                                 : "text-nexus-text hover:bg-nexus-surface"
+                             }`}
                 >
-                  <span className="font-mono truncate">{model}</span>
+                  <span className="truncate">{pretty(model)}</span>
                   {value === model && (
                     <Check className="w-3 h-3 text-nexus-accent flex-shrink-0" />
                   )}
@@ -152,7 +168,7 @@ export default function ModelSelector({ value, onChange }) {
 
             {/* Footer */}
             <div className="px-3 py-2 border-t border-nexus-border">
-              <p className="text-xs text-nexus-muted">Powered by Ollama</p>
+              <p className="text-xs text-nexus-muted">⚡ Powered by Groq</p>
             </div>
           </motion.div>
         )}
@@ -166,19 +182,21 @@ export default function ModelSelector({ value, onChange }) {
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="flex items-center gap-1.5 px-2.5 py-1.5
-                   rounded-lg bg-nexus-surface border border-nexus-border
-                   text-xs text-nexus-muted hover:text-nexus-text
-                   hover:border-nexus-accent/50
+        className="group flex items-center gap-1.5 px-2.5 py-1.5
+                   rounded-xl bg-nexus-card/80 border border-nexus-border/70
+                   text-xs text-nexus-text hover:border-nexus-accent/50
+                   hover:bg-nexus-card backdrop-blur-sm
                    transition-all duration-200 whitespace-nowrap
-                   relative z-10"
+                   shadow-sm relative z-10"
       >
-        <Cpu className="w-3 h-3 text-nexus-accent flex-shrink-0" />
-        <span className="font-medium max-w-[72px] truncate">
+        <span className="flex h-4 w-4 items-center justify-center rounded-md bg-gradient-to-br from-nexus-accent to-purple-600 flex-shrink-0">
+          <Cpu className="w-2.5 h-2.5 text-white" />
+        </span>
+        <span className="font-medium max-w-[96px] truncate">
           {selectedLabel}
         </span>
         <ChevronDown
-          className={`w-3 h-3 flex-shrink-0 transition-transform duration-200
+          className={`w-3 h-3 flex-shrink-0 text-nexus-muted transition-transform duration-200
                       ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
