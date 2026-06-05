@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000";
+// Backend URL. In production set VITE_API_URL (e.g. the Hugging Face Space URL);
+// falls back to the local dev server.
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const api = axios.create({
   baseURL: BASE_URL,
