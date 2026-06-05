@@ -30,7 +30,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-nexus-bg">
+    <div className="relative flex h-screen overflow-hidden gap-2.5 p-2.5 bg-[radial-gradient(125%_125%_at_50%_0%,#15151f_0%,#0a0a0f_55%)]">
       {/* Cinematic boot sequence on entry */}
       <AnimatePresence>
         {booting && (
@@ -83,7 +83,7 @@ export default function App() {
                 animate={{ x: 0 }}
                 exit={{ x: -280 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="md:hidden fixed left-0 top-0 bottom-0 w-[260px] z-40"
+                className="md:hidden fixed left-2.5 top-2.5 bottom-2.5 w-[260px] z-40"
               >
                 <Sidebar
                   currentSessionId={currentSessionId}
@@ -98,8 +98,8 @@ export default function App() {
         </AnimatePresence>
       </>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      {/* Main Chat Area — floating rounded panel */}
+      <div className="flex-1 flex flex-col min-w-0 relative rounded-2xl border border-nexus-border/70 overflow-hidden bg-nexus-bg shadow-2xl shadow-black/40">
         <ChatWindow
           sessionId={currentSessionId}
           onNewSession={handleNewSessionCreated}

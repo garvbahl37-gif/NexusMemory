@@ -81,7 +81,7 @@ export default function Sidebar({
   };
 
   return (
-    <div className="flex flex-col h-full bg-nexus-surface border-r border-nexus-border">
+    <div className="flex flex-col h-full bg-nexus-surface border border-nexus-border/70 rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-nexus-border flex-shrink-0">
         <div className="flex items-center gap-2">

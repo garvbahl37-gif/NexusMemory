@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { sendChatMessage } from "../services/api";
 import { v4 as uuidv4 } from "uuid";
 
@@ -8,13 +8,70 @@ export function useChat(sessionId) {
   const [streamingContent, setStreamingContent] = useState("");
   const [error, setError] = useState(null);
 
+  // ── Typewriter state ──────────────────────────────────────────────
+  // Groq streams the whole reply almost instantly, so we buffer the
+  // received text and reveal it progressively for a natural "typing" feel.
+  const targetRef = useRef(""); // full text received so far
+  const shownRef = useRef(""); // text currently revealed on screen
+  const doneRef = useRef(false); // has the stream finished?
+  const pendingRef = useRef(null); // { id, metadata } — committed once typing catches up
+  const timerRef = useRef(null);
+
+  const stopTyping = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const startTyping = useCallback(() => {
+    stopTyping();
+    timerRef.current = setInterval(() => {
+      const target = targetRef.current;
+      const shown = shownRef.current;
+
+      if (shown.length < target.length) {
+        // Reveal faster when there's a big backlog, easing near the end.
+        const remaining = target.length - shown.length;
+        const step = Math.max(2, Math.floor(remaining / 12));
+        const next = target.slice(0, shown.length + step);
+        shownRef.current = next;
+        setStreamingContent(next);
+        return;
+      }
+
+      // Caught up. If the stream is finished, commit the final message.
+      if (doneRef.current) {
+        stopTyping();
+        const pending = pendingRef.current;
+        if (pending) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: pending.id,
+              role: "assistant",
+              content: targetRef.current,
+              timestamp: new Date().toISOString(),
+              metadata: pending.metadata,
+            },
+          ]);
+        }
+        pendingRef.current = null;
+        setStreamingContent("");
+        setIsStreaming(false);
+      }
+      // else: caught up but more tokens may still arrive — wait.
+    }, 16);
+  }, [stopTyping]);
+
+  // Clean up the interval on unmount.
+  useEffect(() => stopTyping, [stopTyping]);
+
   const sendMessage = useCallback(
     async (content, model, overrideSessionId) => {
       if (!content.trim() || isStreaming) return;
 
-      // Use override (newly created) session id if provided
       const activeSessionId = overrideSessionId || sessionId;
-
       if (!activeSessionId) {
         console.error("No session ID available");
         return;
@@ -29,16 +86,19 @@ export function useChat(sessionId) {
         content: content.trim(),
         timestamp: new Date().toISOString(),
       };
-
       setMessages((prev) => [...prev, userMessage]);
-      setIsStreaming(true);
-      setStreamingContent("");
 
+      // Reset typewriter + streaming state
       const assistantId = uuidv4();
+      targetRef.current = "";
+      shownRef.current = "";
+      doneRef.current = false;
+      pendingRef.current = { id: assistantId, metadata: null };
+      setStreamingContent("");
+      setIsStreaming(true);
+      startTyping();
 
       try {
-        console.log("Sending to session:", activeSessionId);
-
         const response = await sendChatMessage({
           message: content.trim(),
           session_id: activeSessionId,
@@ -48,8 +108,6 @@ export function useChat(sessionId) {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let fullContent = "";
-        let metadata = null;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -68,20 +126,12 @@ export function useChat(sessionId) {
               const event = JSON.parse(jsonStr);
 
               if (event.type === "metadata") {
-                metadata = event;
+                if (pendingRef.current) pendingRef.current.metadata = event;
               } else if (event.type === "token") {
-                fullContent += event.content;
-                setStreamingContent(fullContent);
+                // Feed the buffer; the typewriter reveals it.
+                targetRef.current += event.content;
               } else if (event.type === "done") {
-                const assistantMessage = {
-                  id: assistantId,
-                  role: "assistant",
-                  content: fullContent,
-                  timestamp: new Date().toISOString(),
-                  metadata: metadata,
-                };
-                setMessages((prev) => [...prev, assistantMessage]);
-                setStreamingContent("");
+                doneRef.current = true;
               } else if (event.type === "error") {
                 throw new Error(event.content);
               }
@@ -92,10 +142,13 @@ export function useChat(sessionId) {
             }
           }
         }
+
+        // Stream closed — whatever we have is final; let the typewriter finish.
+        doneRef.current = true;
       } catch (err) {
         console.error("Chat error:", err);
+        stopTyping();
 
-        // Extract readable error message
         let errorMsg = "Something went wrong. Please try again.";
         if (err.message && err.message !== "[object Object]") {
           errorMsg = err.message;
@@ -103,6 +156,7 @@ export function useChat(sessionId) {
 
         setError(errorMsg);
         setStreamingContent("");
+        pendingRef.current = null;
 
         setMessages((prev) => [
           ...prev,
@@ -114,19 +168,23 @@ export function useChat(sessionId) {
             isError: true,
           },
         ]);
-      } finally {
         setIsStreaming(false);
-        setStreamingContent("");
       }
     },
-    [sessionId, isStreaming],
+    [sessionId, isStreaming, startTyping, stopTyping],
   );
 
   const clearMessages = useCallback(() => {
+    stopTyping();
+    targetRef.current = "";
+    shownRef.current = "";
+    doneRef.current = false;
+    pendingRef.current = null;
     setMessages([]);
     setStreamingContent("");
     setError(null);
-  }, []);
+    setIsStreaming(false);
+  }, [stopTyping]);
 
   return {
     messages,
