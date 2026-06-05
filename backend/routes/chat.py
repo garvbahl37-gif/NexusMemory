@@ -140,10 +140,16 @@ async def chat(
         document_context=doc_context,
     )
 
-    # Build LangChain messages
-    prompt_messages = [("system", system_message)]
+    # Build LangChain messages. Escape literal braces in dynamic content
+    # (memories, document chunks, history) so ChatPromptTemplate doesn't
+    # misread JSON-like "{...}" as template variables. Only {user_input}
+    # remains a real variable, filled with the raw (unparsed) message value.
+    def _esc(text: str) -> str:
+        return text.replace("{", "{{").replace("}", "}}")
+
+    prompt_messages = [("system", _esc(system_message))]
     for msg in conversation_history[-6:]:
-        prompt_messages.append((msg["role"], msg["content"]))
+        prompt_messages.append((msg["role"], _esc(msg["content"])))
     prompt_messages.append(("human", "{user_input}"))
 
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
