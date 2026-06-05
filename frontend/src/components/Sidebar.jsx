@@ -143,11 +143,12 @@ export default function Sidebar({
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5
-                         rounded-lg text-xs font-medium transition-all duration-200
+                         rounded-lg text-xs font-medium border
+                         transition-colors duration-200 focus:outline-none
                          ${
                            activeTab === tab.id
-                             ? "bg-nexus-card text-nexus-text shadow-sm border border-nexus-border/70"
-                             : "text-nexus-muted hover:text-nexus-text"
+                             ? "bg-nexus-card text-nexus-text shadow-sm border-nexus-border/70"
+                             : "border-transparent text-nexus-muted hover:text-nexus-text"
                          }`}
           >
             <tab.icon className="w-3 h-3" />

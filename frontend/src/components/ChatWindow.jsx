@@ -383,12 +383,12 @@ function TopBar({
           <button
             onClick={() => setShowMemory(!showMemory)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5
-                         rounded-lg text-xs font-medium
-                         transition-all duration-200 whitespace-nowrap
+                         rounded-lg text-xs font-medium border
+                         transition-colors duration-200 whitespace-nowrap focus:outline-none
                          ${
                            showMemory
-                             ? "bg-nexus-accent/10 border border-nexus-accent/30 text-nexus-accent-light"
-                             : "text-nexus-muted hover:text-nexus-text hover:bg-nexus-card"
+                             ? "bg-nexus-accent/10 border-nexus-accent/30 text-nexus-accent-light"
+                             : "border-transparent text-nexus-muted hover:text-nexus-text hover:bg-nexus-card"
                          }`}
           >
             <Brain className="w-3.5 h-3.5 flex-shrink-0" />
