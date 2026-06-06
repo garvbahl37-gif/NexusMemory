@@ -23,6 +23,15 @@ function getClientId() {
 
 export const CLIENT_ID = getClientId();
 
+// User settings (temperature, persona) persisted by the Settings panel.
+export function getSettings() {
+  try {
+    return JSON.parse(localStorage.getItem("nexus_settings") || "{}");
+  } catch {
+    return {};
+  }
+}
+
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,
@@ -60,6 +69,12 @@ export async function sendChatMessage({
     model: model || "llama3",
     stream: stream,
   };
+
+  // Apply saved generation settings.
+  const s = getSettings();
+  if (typeof s.temperature === "number") payload.temperature = s.temperature;
+  if (s.systemPrompt && s.systemPrompt.trim())
+    payload.system_prompt = s.systemPrompt.trim();
 
   const response = await fetch(`${BASE_URL}/chat`, {
     method: "POST",

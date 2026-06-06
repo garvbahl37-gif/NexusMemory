@@ -17,14 +17,19 @@ import {
   Gauge,
   Square,
   RotateCcw,
+  Settings,
+  Mic,
+  Download,
 } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 import UploadSection from "./UploadSection";
 import MemoryPanel from "./MemoryPanel";
 import ModelSelector from "./ModelSelector";
+import SettingsModal, { loadSettings } from "./SettingsModal";
 import { useChat } from "../hooks/useChat";
 import { getSessionMessages, getMemories } from "../services/api";
+import { createRecognizer, speechSupported, speak } from "../utils/voice";
 
 export default function ChatWindow({
   sessionId,
@@ -38,10 +43,12 @@ export default function ChatWindow({
   const [memories, setMemories] = useState([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const textareaRef = useRef(null);
+  const lastSpokenRef = useRef(null);
 
   const {
     messages,
@@ -70,11 +77,23 @@ export default function ChatWindow({
     }
   }, [messages, streamingContent]);
 
+  // Auto-speak new assistant replies when enabled in settings.
+  useEffect(() => {
+    if (isStreaming) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    if (lastSpokenRef.current === last.id) return;
+    lastSpokenRef.current = last.id;
+    if (loadSettings().autoSpeak) speak(last.content);
+  }, [messages, isStreaming]);
+
   const loadSessionHistory = async () => {
     setIsLoadingHistory(true);
     try {
       const data = await getSessionMessages(sessionId);
       setMessages(data);
+      // Don't auto-speak previously loaded history.
+      lastSpokenRef.current = data[data.length - 1]?.id || null;
     } catch (err) {
       console.error("Failed to load history:", err);
     } finally {
@@ -120,14 +139,78 @@ export default function ChatWindow({
     setTimeout(() => loadMemories(), 2500);
   };
 
+  // Slash commands. Returns true if the input was consumed.
+  const handleSlash = (raw) => {
+    const [cmd, ...rest] = raw.slice(1).split(" ");
+    const arg = rest.join(" ").trim();
+    switch (cmd.toLowerCase()) {
+      case "clear":
+        setMessages([]);
+        return true;
+      case "help":
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `help-${Date.now()}`,
+            role: "assistant",
+            content:
+              "**Slash commands**\n\n- `/summarize` — summarize this conversation\n- `/translate <lang> <text>` — translate text\n- `/clear` — clear the screen\n- `/help` — show this help",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        return true;
+      case "summarize":
+        sendText("Summarize our conversation so far in a few concise bullet points.");
+        return true;
+      case "translate": {
+        const sp = arg.indexOf(" ");
+        if (sp > 0) {
+          const lang = arg.slice(0, sp);
+          const text = arg.slice(sp + 1);
+          sendText(`Translate the following into ${lang}:\n\n${text}`);
+        }
+        return true;
+      }
+      default:
+        return false;
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
     const message = input.trim();
+
+    if (message.startsWith("/") && handleSlash(message)) {
+      setInput("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+      return;
+    }
+
     setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
     await sendText(message);
+  };
+
+  // Export the conversation to a Markdown file.
+  const handleExport = () => {
+    if (!messages.length) return;
+    const md = messages
+      .map((m) => {
+        const who = m.role === "user" ? "**You**" : "**Nexus**";
+        return `${who}:\n\n${m.content}\n`;
+      })
+      .join("\n---\n\n");
+    const blob = new Blob([`# Nexus Memory — Conversation\n\n${md}`], {
+      type: "text/markdown",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `nexus-chat-${Date.now()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // Regenerate the last assistant reply (re-runs the last user message).
@@ -192,6 +275,10 @@ export default function ChatWindow({
   if (!sessionId && messages.length === 0) {
     return (
       <div className="flex flex-col h-full">
+        <SettingsModal
+          open={showSettings}
+          onClose={() => setShowSettings(false)}
+        />
         <TopBar
           onSidebarToggle={onSidebarToggle}
           selectedModel={selectedModel}
@@ -200,6 +287,9 @@ export default function ChatWindow({
           setShowMemory={setShowMemory}
           memoryCount={memories.length}
           sessionId={sessionId}
+          onOpenSettings={() => setShowSettings(true)}
+          onExport={handleExport}
+          canExport={messages.length > 0}
         />
         <div className="relative flex-1 flex overflow-hidden">
           <WelcomeAmbient />
@@ -223,6 +313,7 @@ export default function ChatWindow({
           setShowUpload={setShowUpload}
           sessionId={sessionId}
           onUploadComplete={() => {}}
+          onVoiceText={(t) => setInput(t)}
         />
       </div>
     );
@@ -230,6 +321,10 @@ export default function ChatWindow({
 
   return (
     <div className="flex h-full overflow-hidden">
+      <SettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
       {/* Main Chat Area — static aurora backdrop painted as a CSS background
           (no animated layers → zero scroll cost). */}
       <div className="relative flex-1 flex flex-col min-w-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(99,102,241,0.08),transparent_70%),radial-gradient(55%_45%_at_100%_100%,rgba(34,211,238,0.06),transparent_70%),radial-gradient(50%_45%_at_0%_95%,rgba(217,70,239,0.05),transparent_70%)]">
@@ -242,6 +337,9 @@ export default function ChatWindow({
           setShowMemory={setShowMemory}
           memoryCount={memories.length}
           sessionId={sessionId}
+          onOpenSettings={() => setShowSettings(true)}
+          onExport={handleExport}
+          canExport={messages.length > 0}
         />
 
         {/* Messages Area */}
@@ -354,6 +452,7 @@ export default function ChatWindow({
           setShowUpload={setShowUpload}
           sessionId={sessionId}
           onUploadComplete={() => loadMemories()}
+          onVoiceText={(t) => setInput(t)}
         />
       </div>
 
@@ -390,6 +489,9 @@ function TopBar({
   setShowMemory,
   memoryCount,
   sessionId,
+  onOpenSettings,
+  onExport,
+  canExport,
 }) {
   return (
     <div
@@ -460,6 +562,26 @@ function TopBar({
           </button>
         )}
 
+        {/* Export */}
+        {canExport && (
+          <button
+            onClick={onExport}
+            title="Export chat as Markdown"
+            className="rounded-lg p-1.5 text-nexus-muted transition-colors hover:bg-nexus-card hover:text-nexus-text"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        )}
+
+        {/* Settings */}
+        <button
+          onClick={onOpenSettings}
+          title="Settings"
+          className="rounded-lg p-1.5 text-nexus-muted transition-colors hover:bg-nexus-card hover:text-nexus-text"
+        >
+          <Settings className="h-4 w-4" />
+        </button>
+
         {/* Model selector — always visible, dropdown-aware */}
         <ModelSelector value={selectedModel} onChange={setSelectedModel} />
       </div>
@@ -479,7 +601,27 @@ function InputBar({
   setShowUpload,
   sessionId,
   onUploadComplete,
+  onVoiceText,
 }) {
+  const [listening, setListening] = useState(false);
+  const recognizerRef = useRef(null);
+
+  const toggleVoice = () => {
+    if (listening) {
+      recognizerRef.current?.stop();
+      return;
+    }
+    const rec = createRecognizer({
+      onResult: (text) => onVoiceText?.(text),
+      onEnd: () => setListening(false),
+      onError: () => setListening(false),
+    });
+    if (!rec) return;
+    recognizerRef.current = rec;
+    setListening(true);
+    rec.start();
+  };
+
   return (
     <div className="flex-shrink-0 border-t border-nexus-border/60 bg-nexus-surface/70 backdrop-blur-xl px-4 py-4">
       <div className="max-w-3xl mx-auto">
@@ -506,6 +648,21 @@ function InputBar({
             >
               <Paperclip className="h-[18px] w-[18px]" />
             </button>
+
+            {/* Voice input */}
+            {speechSupported() && (
+              <button
+                onClick={toggleVoice}
+                title={listening ? "Stop listening" : "Voice input"}
+                className={`mb-1 flex-shrink-0 rounded-xl p-2 transition-all duration-200 ${
+                  listening
+                    ? "bg-red-500/15 text-red-400 animate-pulse"
+                    : "text-nexus-muted hover:bg-white/5 hover:text-nexus-accent-light"
+                }`}
+              >
+                <Mic className="h-[18px] w-[18px]" />
+              </button>
+            )}
 
             {/* Textarea */}
             <textarea

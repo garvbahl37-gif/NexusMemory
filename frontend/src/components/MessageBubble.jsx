@@ -12,8 +12,47 @@ import {
   Zap,
   Pencil,
   X,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useState, useRef } from "react";
+import { speak, stopSpeaking, ttsSupported } from "../utils/voice";
+
+function SpeakButton({ text }) {
+  const [speaking, setSpeaking] = useState(false);
+  if (!ttsSupported()) return null;
+
+  const toggle = () => {
+    if (speaking) {
+      stopSpeaking();
+      setSpeaking(false);
+    } else {
+      speak(text);
+      setSpeaking(true);
+      // Best-effort reset when speech ends.
+      const t = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+          setSpeaking(false);
+          clearInterval(t);
+        }
+      }, 400);
+    }
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-nexus-muted hover:text-nexus-text"
+      title={speaking ? "Stop" : "Read aloud"}
+    >
+      {speaking ? (
+        <VolumeX className="w-3.5 h-3.5 text-nexus-accent-light" />
+      ) : (
+        <Volume2 className="w-3.5 h-3.5" />
+      )}
+    </button>
+  );
+}
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
@@ -192,6 +231,7 @@ export default function MessageBubble({
           </span>
           <span className="text-[11px] text-nexus-muted">{timestamp}</span>
           <CopyButton text={message.content} />
+          {!isStreaming && <SpeakButton text={message.content} />}
         </div>
 
         {/* Glass card with a subtle gradient-edge highlight */}

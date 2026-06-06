@@ -17,6 +17,10 @@ const ACCEPTED_TYPES = {
   "application/pdf": [".pdf"],
   "text/plain": [".txt"],
   "text/markdown": [".md"],
+  "text/csv": [".csv"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+    ".docx",
+  ],
 };
 
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
@@ -212,7 +216,9 @@ export default function UploadSection({ sessionId, onUploadComplete }) {
           <p className="text-xs font-medium text-nexus-text mb-1">
             {isDragActive ? "Drop files here" : "Upload Documents"}
           </p>
-          <p className="text-xs text-nexus-muted">PDF, TXT, MD — up to 50MB</p>
+          <p className="text-xs text-nexus-muted">
+            PDF, DOCX, CSV, TXT, MD — up to 50MB
+          </p>
         </motion.div>
       </div>
 

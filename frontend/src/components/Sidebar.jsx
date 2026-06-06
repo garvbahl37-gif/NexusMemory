@@ -9,6 +9,7 @@ import {
   Zap,
   X,
   Tag,
+  Search,
 } from "lucide-react";
 import { getSessions, deleteSession, getMemories } from "../services/api";
 import { format } from "date-fns";
@@ -22,6 +23,7 @@ export default function Sidebar({
 }) {
   const [sessions, setSessions] = useState([]);
   const [activeTab, setActiveTab] = useState("chats");
+  const [query, setQuery] = useState("");
   const [memories, setMemories] = useState([]);
   const [memoryCount, setMemoryCount] = useState(0);
   const [loadingMemories, setLoadingMemories] = useState(false);
@@ -170,6 +172,19 @@ export default function Sidebar({
               transition={{ duration: 0.15 }}
               className="space-y-1"
             >
+              {/* Search conversations */}
+              {sessions.length > 0 && (
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-nexus-muted" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search chats…"
+                    className="nexus-input w-full text-xs pl-8 py-1.5"
+                  />
+                </div>
+              )}
+
               {sessions.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-nexus-border/60 bg-gradient-to-br from-nexus-card to-nexus-surface shadow-inner">
@@ -183,7 +198,11 @@ export default function Sidebar({
                   </p>
                 </div>
               ) : (
-                sessions.map((session, index) => (
+                sessions
+                  .filter((s) =>
+                    (s.title || "").toLowerCase().includes(query.toLowerCase()),
+                  )
+                  .map((session, index) => (
                   <motion.div
                     key={session.session_id}
                     initial={{ opacity: 0, y: 4 }}
