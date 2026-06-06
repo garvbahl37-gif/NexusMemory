@@ -99,6 +99,7 @@ async def chat(
     # Retrieve relevant document chunks
     doc_context = ""
     docs_retrieved = 0
+    citations = []
 
     documents = (
         db.query(UploadedDocument)
@@ -118,8 +119,20 @@ async def chat(
 
         if all_chunks:
             docs_retrieved = len(all_chunks)
-            context_text = format_context_from_docs(all_chunks[:settings.RETRIEVAL_K])
+            top = all_chunks[:settings.RETRIEVAL_K]
+            context_text = format_context_from_docs(top)
             doc_context = f"### Context From Your Documents:\n{context_text}"
+
+            # Inline citations surfaced to the UI.
+            for c in top:
+                src = str(c.metadata.get("source") or "document")
+                src = src.split("/")[-1].split("\\")[-1]
+                page = c.metadata.get("page")
+                citations.append({
+                    "source": src,
+                    "page": (page + 1) if isinstance(page, int) else None,
+                    "snippet": (c.page_content or "")[:160].strip(),
+                })
 
     # Get recent conversation history
     recent_messages = (
@@ -146,6 +159,27 @@ async def chat(
     )
     if request.system_prompt and request.system_prompt.strip():
         system_message = request.system_prompt.strip() + "\n\n" + system_message
+
+    # Summarize older turns so long conversations stay coherent (only the last
+    # 6 messages are sent verbatim; everything before is condensed).
+    older = conversation_history[:-6] if len(conversation_history) > 6 else []
+    if len(older) >= 4:
+        try:
+            summ_llm = get_llm(temperature=0.3)
+            convo_text = "\n".join(
+                f"{m['role']}: {m['content']}" for m in older
+            )
+            summary = summ_llm.invoke(
+                "Summarize the key points, decisions, and facts from this "
+                "earlier conversation in 3-5 short bullet points:\n\n"
+                + convo_text
+            )
+            if summary and str(summary).strip():
+                system_message += (
+                    "\n\n### Summary of earlier conversation:\n" + str(summary).strip()
+                )
+        except Exception as e:
+            logger.warning(f"History summarization failed: {e}")
 
     # Build LangChain messages. Escape literal braces in dynamic content
     # (memories, document chunks, history) so ChatPromptTemplate doesn't
@@ -177,6 +211,7 @@ async def chat(
                     "session_id": session_id,
                     "memories_used": len(memories),
                     "docs_retrieved": docs_retrieved,
+                    "citations": citations,
                 })
                 yield f"data: {metadata}\n\n"
 
