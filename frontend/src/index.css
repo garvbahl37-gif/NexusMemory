@@ -248,6 +248,49 @@
   }
 }
 
+/* ── Welcome ambient aurora ───────────────────────────────────────── */
+/* Promoted to its own compositor layer so the heavy blur is rasterized
+   once and only TRANSFORMED each frame — keeps scrolling buttery. */
+.aurora-orb {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@keyframes auroraDriftA {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(38px, 26px, 0);
+  }
+}
+@keyframes auroraDriftB {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-46px, 34px, 0);
+  }
+}
+@keyframes auroraDriftC {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(26px, -24px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-orb {
+    animation: none !important;
+  }
+}
+
 /* Sweeping shine across the progress fill */
 .cine-shimmer {
   background: linear-gradient(

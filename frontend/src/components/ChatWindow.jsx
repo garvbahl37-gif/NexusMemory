@@ -506,24 +506,23 @@ function InputBar({
 // Animated ambient backdrop behind the welcome content — drifting aurora
 // orbs and a masked grid for depth.
 function WelcomeAmbient() {
+  // Pure-CSS, GPU-composited orbs (see .aurora-orb in index.css) — no
+  // per-frame JS and no blur re-rasterization, so scrolling stays smooth.
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <motion.div
-        className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-indigo-600/20 blur-[90px]"
-        animate={{ x: [0, 50, 0], y: [0, 35, 0] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+      <div
+        className="aurora-orb absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-600/20 blur-[70px]"
+        style={{ animation: "auroraDriftA 22s ease-in-out infinite" }}
       />
-      <motion.div
-        className="absolute top-1/4 -right-28 h-96 w-96 rounded-full bg-cyan-500/15 blur-[100px]"
-        animate={{ x: [0, -60, 0], y: [0, 45, 0] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+      <div
+        className="aurora-orb absolute top-1/4 -right-28 h-80 w-80 rounded-full bg-cyan-500/15 blur-[80px]"
+        style={{ animation: "auroraDriftB 26s ease-in-out infinite" }}
       />
-      <motion.div
-        className="absolute -bottom-20 left-1/3 h-80 w-80 rounded-full bg-fuchsia-600/15 blur-[90px]"
-        animate={{ x: [0, 35, 0], y: [0, -30, 0] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+      <div
+        className="aurora-orb absolute -bottom-20 left-1/3 h-72 w-72 rounded-full bg-fuchsia-600/15 blur-[70px]"
+        style={{ animation: "auroraDriftC 24s ease-in-out infinite" }}
       />
-      <div className="absolute inset-0 opacity-[0.12] [background:linear-gradient(rgba(99,102,241,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.5)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)] [-webkit-mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]" />
+      <div className="absolute inset-0 opacity-[0.10] [background:linear-gradient(rgba(99,102,241,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.5)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)] [-webkit-mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]" />
     </div>
   );
 }
@@ -581,9 +580,9 @@ function WelcomeScreen({ onSuggestion }) {
       {/* Animated logo */}
       <div className="relative mx-auto mb-7 h-20 w-20">
         <motion.div
-          className="absolute -inset-4 rounded-full bg-nexus-accent/20 blur-2xl"
-          animate={{ opacity: [0.35, 0.75, 0.35], scale: [1, 1.15, 1] }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -inset-4 rounded-full bg-nexus-accent/20 blur-2xl will-change-[opacity]"
+          animate={{ opacity: [0.4, 0.7, 0.4] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
           className="absolute inset-0 rounded-3xl border border-nexus-accent/30"
