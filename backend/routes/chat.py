@@ -81,10 +81,11 @@ async def chat(
     db.add(user_msg)
     db.commit()
 
-    # Retrieve relevant memories
+    # Retrieve relevant memories (cross-session, scoped to this client)
     memories = retrieve_relevant_memories(
         query=request.message,
         session_id=session_id,
+        client_id=x_client_id,
         k=settings.MAX_MEMORY_CONTEXT,
     )
 
@@ -207,7 +208,9 @@ async def chat(
                         session_id=session_id,
                         fact=mem["fact"],
                         category=mem["category"],
+                        confidence=mem.get("confidence", 1.0),
                         source_message=request.message,
+                        client_id=x_client_id,
                     )
 
                 # Send done signal

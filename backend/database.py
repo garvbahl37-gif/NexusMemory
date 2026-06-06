@@ -54,11 +54,14 @@ class MemoryEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String, index=True)
+    # Owner of the memory — enables cross-session recall scoped per browser.
+    client_id = Column(String, index=True, nullable=True)
     fact = Column(Text)
     category = Column(String, default="general")
     embedding_id = Column(String, nullable=True)
     confidence = Column(Float, default=1.0)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     source_message = Column(Text, nullable=True)
 
 
