@@ -24,17 +24,21 @@ def retrieve_relevant_chunks(
     try:
         vectorstore = load_collection(collection_name)
 
-        # Use MMR for diverse, relevant results
-        retriever = vectorstore.as_retriever(
-            search_type="mmr",
-            search_kwargs={
-                "k": k,
-                "fetch_k": k * 3,
-                "lambda_mult": 0.7,
-            },
-        )
-
-        docs = retriever.invoke(query)
+        # Prefer MMR for diverse, relevant results; fall back to plain
+        # similarity if the backend (e.g. pgvector) doesn't support MMR.
+        try:
+            retriever = vectorstore.as_retriever(
+                search_type="mmr",
+                search_kwargs={
+                    "k": k,
+                    "fetch_k": k * 3,
+                    "lambda_mult": 0.7,
+                },
+            )
+            docs = retriever.invoke(query)
+        except Exception as mmr_err:
+            logger.warning(f"MMR unavailable, using similarity: {mmr_err}")
+            docs = vectorstore.similarity_search(query, k=k)
 
         logger.info(
             f"Retrieved {len(docs)} chunks for query: '{query[:50]}...'"

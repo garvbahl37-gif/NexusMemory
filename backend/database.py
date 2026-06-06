@@ -17,10 +17,31 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 from config import settings
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False},
-)
+# Normalize the DB URL so SQLAlchemy uses the psycopg2 driver for Postgres
+# (Supabase gives "postgresql://..."). SQLite stays as-is for local dev.
+_db_url = settings.DATABASE_URL
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif _db_url.startswith("postgresql://"):
+    _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+SQLALCHEMY_DATABASE_URL = _db_url
+IS_POSTGRES = _db_url.startswith("postgresql")
+
+if IS_POSTGRES:
+    # Poolers drop idle connections — pre_ping + recycle keeps them healthy.
+    engine = create_engine(
+        _db_url,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        pool_size=5,
+        max_overflow=2,
+    )
+else:
+    engine = create_engine(
+        _db_url,
+        connect_args={"check_same_thread": False},
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

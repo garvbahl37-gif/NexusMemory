@@ -3,10 +3,9 @@ os.environ["ANONYMIZED_TELEMETRY"] = "false"
 os.environ["CHROMA_TELEMETRY"]     = "false"
 
 from sqlalchemy.orm import Session
-from langchain_chroma import Chroma
 from langchain.schema import Document
 from database import MemoryEntry
-from services.llm import get_embeddings
+from services.vectorstore import get_vectorstore
 from config import settings
 import logging
 import uuid
@@ -19,13 +18,9 @@ MEMORY_COLLECTION = "nexus_long_term_memory"
 DEDUP_THRESHOLD = 0.92
 
 
-def get_memory_vectorstore() -> Chroma:
-    """Get or create the memory vector store."""
-    return Chroma(
-        collection_name=MEMORY_COLLECTION,
-        embedding_function=get_embeddings(),
-        persist_directory=str(settings.CHROMA_DIR),
-    )
+def get_memory_vectorstore():
+    """Get or create the memory vector store (pgvector or Chroma)."""
+    return get_vectorstore(MEMORY_COLLECTION)
 
 
 def _is_duplicate(fact: str, client_id: str) -> bool:

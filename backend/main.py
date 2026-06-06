@@ -36,9 +36,12 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 Starting Nexus Memory API...")
 
-    # Initialize database
-    init_db()
-    logger.info("✅ Database initialized")
+    # Initialize database (don't crash the whole app if the DB is briefly down)
+    try:
+        init_db()
+        logger.info("✅ Database initialized")
+    except Exception as e:
+        logger.error(f"⚠️  Database init failed: {e}")
 
     # Check LLM provider health (Groq or Ollama)
     health = await check_llm_health()
