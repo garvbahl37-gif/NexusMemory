@@ -13,7 +13,7 @@ from pathlib import Path
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md"}
+ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".csv"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 

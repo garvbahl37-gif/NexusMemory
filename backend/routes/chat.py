@@ -37,10 +37,12 @@ Instructions:
 
 
 class ChatRequest(BaseModel):
-    message:    str
-    session_id: Optional[str] = None  
-    model:      Optional[str] = None
-    stream:     bool = True
+    message:       str
+    session_id:    Optional[str] = None
+    model:         Optional[str] = None
+    stream:        bool = True
+    temperature:   Optional[float] = None
+    system_prompt: Optional[str] = None  # persona / custom instructions
 
 
 class ChatResponse(BaseModel):
@@ -137,11 +139,13 @@ async def chat(
             "content": msg.content,
         })
 
-    # Build the system message
+    # Build the system message (optionally prefixed with a custom persona)
     system_message = SYSTEM_PROMPT.format(
         memory_context=memory_context,
         document_context=doc_context,
     )
+    if request.system_prompt and request.system_prompt.strip():
+        system_message = request.system_prompt.strip() + "\n\n" + system_message
 
     # Build LangChain messages. Escape literal braces in dynamic content
     # (memories, document chunks, history) so ChatPromptTemplate doesn't
@@ -163,7 +167,7 @@ async def chat(
         # Streaming response
         async def generate():
             full_response = ""
-            llm = get_llm(model=model_name, streaming=True)
+            llm = get_llm(model=model_name, streaming=True, temperature=request.temperature)
             chain = prompt | llm
 
             try:
@@ -237,7 +241,7 @@ async def chat(
     else:
         # Non-streaming response
         try:
-            llm = get_llm(model=model_name, streaming=False)
+            llm = get_llm(model=model_name, streaming=False, temperature=request.temperature)
             chain = prompt | llm
             response = chain.invoke({"user_input": request.message})
 

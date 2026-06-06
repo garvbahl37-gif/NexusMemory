@@ -11,7 +11,7 @@ def use_groq() -> bool:
     return bool(settings.GROQ_API_KEY)
 
 
-def get_llm(model: str = None, streaming: bool = False):
+def get_llm(model: str = None, streaming: bool = False, temperature: float = None):
     """
     Get the configured chat LLM.
 
@@ -20,12 +20,14 @@ def get_llm(model: str = None, streaming: bool = False):
     Ollama string LLM, so chat.py / extractor.py work unchanged).
     Otherwise falls back to a local Ollama model.
     """
+    temp = 0.7 if temperature is None else max(0.0, min(2.0, float(temperature)))
+
     if use_groq():
         from langchain_groq import ChatGroq
         chat = ChatGroq(
             model=settings.GROQ_MODEL,
             api_key=settings.GROQ_API_KEY,
-            temperature=0.7,
+            temperature=temp,
         )
         return chat | StrOutputParser()
 
@@ -37,7 +39,7 @@ def get_llm(model: str = None, streaming: bool = False):
         return OllamaLLM(
             model=model_name,
             base_url=settings.OLLAMA_BASE_URL,
-            temperature=0.7,
+            temperature=temp,
         )
     except Exception:
         pass
@@ -48,7 +50,7 @@ def get_llm(model: str = None, streaming: bool = False):
         return Ollama(
             model=model_name,
             base_url=settings.OLLAMA_BASE_URL,
-            temperature=0.7,
+            temperature=temp,
         )
     except Exception as e:
         logger.error(f"Failed to load any LLM: {e}")
