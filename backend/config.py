@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     USE_LOCAL_EMBEDDINGS: bool = True
     LOCAL_EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
 
+    # Supabase Storage (raw uploaded files). When all three are set, files are
+    # stored in the bucket; otherwise they stay on local disk.
+    SUPABASE_URL:         str = ""
+    SUPABASE_SERVICE_KEY: str = ""
+    SUPABASE_BUCKET:      str = "nexus-uploads"
+
     BASE_DIR:     Path = Path(__file__).parent
     UPLOAD_DIR:   Path = Path(__file__).parent / "uploads"
     CHROMA_DIR:   Path = Path(__file__).parent / "chroma_db"

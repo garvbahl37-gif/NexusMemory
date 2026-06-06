@@ -93,6 +93,7 @@ class UploadedDocument(Base):
     session_id = Column(String, index=True)
     filename = Column(String)
     file_path = Column(String)
+    storage_path = Column(String, nullable=True)  # object key in Supabase Storage
     chunk_count = Column(Integer, default=0)
     collection_name = Column(String)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
