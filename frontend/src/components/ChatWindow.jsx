@@ -195,8 +195,9 @@ export default function ChatWindow({
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Chat Area — static aurora backdrop painted as a CSS background
+          (no animated layers → zero scroll cost). */}
+      <div className="relative flex-1 flex flex-col min-w-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(99,102,241,0.08),transparent_70%),radial-gradient(55%_45%_at_100%_100%,rgba(34,211,238,0.06),transparent_70%),radial-gradient(50%_45%_at_0%_95%,rgba(217,70,239,0.05),transparent_70%)]">
         {/* Top Bar */}
         <TopBar
           onSidebarToggle={onSidebarToggle}
@@ -212,8 +213,9 @@ export default function ChatWindow({
         <div
           ref={messagesContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-4 py-4 space-y-1"
+          className="relative z-10 flex-1 overflow-y-auto px-4 py-6"
         >
+          <div className="mx-auto max-w-3xl space-y-1">
           {isLoadingHistory ? (
             <div className="flex items-center justify-center h-24">
               <div className="text-xs text-nexus-muted">Loading history...</div>
@@ -251,6 +253,7 @@ export default function ChatWindow({
               <div ref={messagesEndRef} />
             </>
           )}
+          </div>
         </div>
 
         {/* Scroll to bottom button */}

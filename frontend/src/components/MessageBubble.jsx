@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { format } from "date-fns";
-import { Brain, FileText, User, Copy, Check } from "lucide-react";
+import { Brain, FileText, User, Copy, Check, Zap } from "lucide-react";
 import { useState } from "react";
 
 function CopyButton({ text }) {
@@ -42,24 +42,26 @@ export default function MessageBubble({ message, isStreaming = false }) {
   if (isUser) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 8, x: 20 }}
+        initial={{ opacity: 0, y: 10, x: 16 }}
         animate={{ opacity: 1, y: 0, x: 0 }}
-        transition={{ duration: 0.2 }}
-        className="flex items-start gap-3 mb-4 flex-row-reverse group"
+        transition={{ type: "spring", stiffness: 260, damping: 24 }}
+        className="group mb-5 flex flex-row-reverse items-start gap-3"
       >
         {/* User Avatar */}
-        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-nexus-surface border border-nexus-border flex items-center justify-center">
-          <User className="w-4 h-4 text-nexus-muted" />
+        <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-nexus-card border border-nexus-border ring-1 ring-white/5">
+          <User className="h-4 w-4 text-nexus-muted" />
         </div>
 
-        <div className="flex flex-col items-end gap-1 max-w-[75%]">
-          <div className="flex items-center gap-2">
+        <div className="flex max-w-[78%] flex-col items-end gap-1">
+          <div className="flex items-center gap-2 px-1">
             <CopyButton text={message.content} />
-            <span className="text-xs text-nexus-muted">{timestamp}</span>
+            <span className="text-[11px] text-nexus-muted">{timestamp}</span>
           </div>
           <div
-            className="bg-nexus-accent text-white rounded-2xl rounded-tr-sm
-                         px-4 py-3 text-sm leading-relaxed"
+            className="rounded-2xl rounded-tr-md bg-gradient-to-br from-nexus-accent to-purple-600
+                       px-4 py-2.5 text-sm leading-relaxed text-white
+                       shadow-lg shadow-nexus-accent/20 ring-1 ring-white/10
+                       whitespace-pre-wrap break-words"
           >
             {message.content}
           </div>
@@ -71,45 +73,50 @@ export default function MessageBubble({ message, isStreaming = false }) {
   // Assistant message
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className="flex items-start gap-3 mb-4 group"
+      transition={{ type: "spring", stiffness: 240, damping: 24 }}
+      className="group mb-5 flex items-start gap-3"
     >
       {/* Nexus Avatar */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-        <span className="text-white text-xs font-bold">N</span>
+      <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30 ring-1 ring-white/10">
+        <Zap className="h-4 w-4 text-white" />
       </div>
 
-      <div className="flex flex-col gap-1 max-w-[80%] min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-nexus-accent-light">
+      <div className="flex min-w-0 max-w-[82%] flex-col gap-1">
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-[11px] font-semibold text-nexus-accent-light">
             Nexus
           </span>
-          <span className="text-xs text-nexus-muted">{timestamp}</span>
+          <span className="text-[11px] text-nexus-muted">{timestamp}</span>
           <CopyButton text={message.content} />
         </div>
 
-        {/* Message content */}
+        {/* Glass card with a subtle gradient-edge highlight */}
         <div
-          className={`bg-nexus-card border rounded-2xl rounded-tl-sm px-4 py-3
-                       text-sm ${message.isError ? "border-nexus-error" : "border-nexus-border"}`}
+          className={`rounded-2xl rounded-tl-md p-[1px] shadow-lg shadow-black/20 ${
+            message.isError
+              ? "bg-nexus-error/40"
+              : "bg-gradient-to-br from-white/12 to-white/[0.03]"
+          }`}
         >
-          <div className="prose-nexus">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {message.content}
-            </ReactMarkdown>
-          </div>
+          <div className="rounded-2xl rounded-tl-md bg-nexus-card px-4 py-3 text-sm">
+            <div className="prose-nexus">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.content}
+              </ReactMarkdown>
+            </div>
 
-          {/* Streaming cursor */}
-          {isStreaming && (
-            <span className="inline-block w-0.5 h-4 bg-nexus-accent ml-0.5 animate-pulse" />
-          )}
+            {/* Streaming cursor */}
+            {isStreaming && (
+              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse rounded-full bg-nexus-accent align-middle" />
+            )}
+          </div>
         </div>
 
         {/* Metadata badges */}
         {(memoriesUsed > 0 || docsRetrieved > 0) && (
-          <div className="flex items-center gap-2 mt-1">
+          <div className="mt-1 flex items-center gap-2 px-1">
             {memoriesUsed > 0 && (
               <span className="flex items-center gap-1 text-xs text-indigo-400 bg-indigo-950/40 border border-indigo-800/30 rounded-full px-2 py-0.5">
                 <Brain className="w-2.5 h-2.5" />
