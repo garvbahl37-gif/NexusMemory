@@ -11,11 +11,15 @@ from sqlalchemy import (
     Text,
     DateTime,
     Float,
+    text,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
+import logging
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 # Normalize the DB URL so SQLAlchemy uses the psycopg2 driver for Postgres
 # (Supabase gives "postgresql://..."). SQLite stays as-is for local dev.
@@ -99,8 +103,30 @@ class UploadedDocument(Base):
     uploaded_at = Column(DateTime, default=datetime.utcnow)
 
 
+def _run_light_migrations():
+    """Add columns that were introduced after a table was first created.
+    create_all() never ALTERs existing tables, so on a long-lived Postgres DB
+    we patch in new nullable columns idempotently."""
+    if not IS_POSTGRES:
+        return  # local SQLite is recreated from the models anyway
+    stmts = [
+        "ALTER TABLE uploaded_documents ADD COLUMN IF NOT EXISTS storage_path VARCHAR",
+        "ALTER TABLE memory_entries ADD COLUMN IF NOT EXISTS client_id VARCHAR",
+        "ALTER TABLE memory_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
+        "ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS client_id VARCHAR",
+    ]
+    try:
+        with engine.begin() as conn:
+            for s in stmts:
+                conn.execute(text(s))
+        logger.info("✅ Light migrations applied")
+    except Exception as e:
+        logger.warning(f"Light migration skipped: {e}")
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _run_light_migrations()
 
 
 def get_db():
