@@ -179,6 +179,13 @@ export async function deleteDocument(documentId) {
   return data;
 }
 
+/**
+ * Download URL for a stored document (redirects to a signed Supabase URL).
+ */
+export function documentDownloadUrl(documentId) {
+  return `${BASE_URL}/documents/${documentId}/download`;
+}
+
 // ─── Memory API ───────────────────────────────────────────────────────────────
 
 /**

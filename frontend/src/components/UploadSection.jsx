@@ -10,8 +10,13 @@ import {
   Loader2,
   Trash2,
   File,
+  Download,
 } from "lucide-react";
-import { uploadDocument, deleteDocument } from "../services/api";
+import {
+  uploadDocument,
+  deleteDocument,
+  documentDownloadUrl,
+} from "../services/api";
 
 const ACCEPTED_TYPES = {
   "application/pdf": [".pdf"],
@@ -85,6 +90,20 @@ function FileItem({ file, onRemove }) {
           </div>
         )}
       </div>
+
+      {/* Download */}
+      {file.status === "success" && file.documentId && (
+        <a
+          href={documentDownloadUrl(file.documentId)}
+          target="_blank"
+          rel="noreferrer"
+          className="p-1 rounded hover:bg-nexus-surface text-nexus-muted
+                     hover:text-nexus-accent-light transition-colors flex-shrink-0"
+          title="Download file"
+        >
+          <Download className="w-3 h-3" />
+        </a>
+      )}
 
       {/* Remove button */}
       {(file.status === "success" || file.status === "error") && (
