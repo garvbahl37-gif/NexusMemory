@@ -1,9 +1,19 @@
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 import { format } from "date-fns";
-import { Brain, FileText, User, Copy, Check, Zap } from "lucide-react";
-import { useState } from "react";
+import {
+  Brain,
+  FileText,
+  User,
+  Copy,
+  Check,
+  Zap,
+  Pencil,
+  X,
+} from "lucide-react";
+import { useState, useRef } from "react";
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
@@ -30,7 +40,43 @@ function CopyButton({ text }) {
   );
 }
 
-export default function MessageBubble({ message, isStreaming = false }) {
+// Code block with a hover copy button (used to override markdown <pre>).
+function PreBlock({ children }) {
+  const ref = useRef(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const text = ref.current?.innerText || "";
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="group/code relative my-3">
+      <button
+        onClick={handleCopy}
+        className="absolute right-2 top-2 z-10 rounded-md border border-nexus-border/70 bg-nexus-surface/90 p-1.5 text-nexus-muted opacity-0 backdrop-blur-sm transition-opacity hover:text-nexus-text group-hover/code:opacity-100"
+        title="Copy code"
+      >
+        {copied ? (
+          <Check className="h-3 w-3 text-nexus-success" />
+        ) : (
+          <Copy className="h-3 w-3" />
+        )}
+      </button>
+      <pre ref={ref}>{children}</pre>
+    </div>
+  );
+}
+
+const MARKDOWN_COMPONENTS = { pre: PreBlock };
+
+export default function MessageBubble({
+  message,
+  isStreaming = false,
+  onEdit,
+}) {
   const isUser = message.role === "user";
   const timestamp = message.timestamp
     ? format(new Date(message.timestamp), "HH:mm")
@@ -39,7 +85,17 @@ export default function MessageBubble({ message, isStreaming = false }) {
   const memoriesUsed = message.metadata?.memories_used || 0;
   const docsRetrieved = message.metadata?.docs_retrieved || 0;
 
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.content);
+
   if (isUser) {
+    const submitEdit = () => {
+      if (draft.trim() && draft.trim() !== message.content) {
+        onEdit?.(message.id, draft.trim());
+      }
+      setEditing(false);
+    };
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 10, x: 16 }}
@@ -54,17 +110,63 @@ export default function MessageBubble({ message, isStreaming = false }) {
 
         <div className="flex max-w-[78%] flex-col items-end gap-1">
           <div className="flex items-center gap-2 px-1">
+            {onEdit && !editing && (
+              <button
+                onClick={() => {
+                  setDraft(message.content);
+                  setEditing(true);
+                }}
+                title="Edit & resend"
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-nexus-muted hover:text-nexus-text"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
             <CopyButton text={message.content} />
             <span className="text-[11px] text-nexus-muted">{timestamp}</span>
           </div>
-          <div
-            className="rounded-2xl rounded-tr-md bg-gradient-to-br from-nexus-accent to-purple-600
-                       px-4 py-2.5 text-sm leading-relaxed text-white
-                       shadow-lg shadow-nexus-accent/20 ring-1 ring-white/10
-                       whitespace-pre-wrap break-words"
-          >
-            {message.content}
-          </div>
+
+          {editing ? (
+            <div className="w-[min(78vw,32rem)] rounded-2xl rounded-tr-md border border-nexus-accent/40 bg-nexus-surface p-2">
+              <textarea
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    submitEdit();
+                  }
+                  if (e.key === "Escape") setEditing(false);
+                }}
+                rows={Math.min(6, draft.split("\n").length + 1)}
+                className="w-full resize-none bg-transparent text-sm text-nexus-text outline-none"
+              />
+              <div className="mt-1 flex justify-end gap-2">
+                <button
+                  onClick={() => setEditing(false)}
+                  className="rounded-md px-2 py-1 text-xs text-nexus-muted hover:text-nexus-text"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={submitEdit}
+                  className="rounded-md bg-nexus-accent px-3 py-1 text-xs font-medium text-white hover:bg-nexus-accent-light"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="rounded-2xl rounded-tr-md bg-gradient-to-br from-nexus-accent to-purple-600
+                         px-4 py-2.5 text-sm leading-relaxed text-white
+                         shadow-lg shadow-nexus-accent/20 ring-1 ring-white/10
+                         whitespace-pre-wrap break-words"
+            >
+              {message.content}
+            </div>
+          )}
         </div>
       </motion.div>
     );
@@ -102,7 +204,11 @@ export default function MessageBubble({ message, isStreaming = false }) {
         >
           <div className="rounded-2xl rounded-tl-md bg-nexus-card px-4 py-3 text-sm">
             <div className="prose-nexus">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[[rehypeHighlight, { detect: true, ignoreMissing: true }]]}
+                components={MARKDOWN_COMPONENTS}
+              >
                 {message.content}
               </ReactMarkdown>
             </div>

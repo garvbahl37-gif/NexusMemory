@@ -16,6 +16,7 @@ export function useChat(sessionId) {
   const doneRef = useRef(false); // has the stream finished?
   const pendingRef = useRef(null); // { id, metadata } — committed once typing catches up
   const timerRef = useRef(null);
+  const controllerRef = useRef(null); // AbortController for the active stream
 
   const stopTyping = useCallback(() => {
     if (timerRef.current) {
@@ -68,7 +69,8 @@ export function useChat(sessionId) {
   useEffect(() => stopTyping, [stopTyping]);
 
   const sendMessage = useCallback(
-    async (content, model, overrideSessionId) => {
+    async (content, model, overrideSessionId, options = {}) => {
+      const { skipUserMessage = false } = options;
       if (!content.trim() || isStreaming) return;
 
       const activeSessionId = overrideSessionId || sessionId;
@@ -79,17 +81,20 @@ export function useChat(sessionId) {
 
       setError(null);
 
-      // Add user message immediately
-      const userMessage = {
-        id: uuidv4(),
-        role: "user",
-        content: content.trim(),
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
+      // Add user message immediately (skip when regenerating / editing).
+      if (!skipUserMessage) {
+        const userMessage = {
+          id: uuidv4(),
+          role: "user",
+          content: content.trim(),
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+      }
 
       // Reset typewriter + streaming state
       const assistantId = uuidv4();
+      controllerRef.current = new AbortController();
       targetRef.current = "";
       shownRef.current = "";
       doneRef.current = false;
@@ -104,6 +109,7 @@ export function useChat(sessionId) {
           session_id: activeSessionId,
           model: model || "llama3",
           stream: true,
+          signal: controllerRef.current.signal,
         });
 
         const reader = response.body.getReader();
@@ -146,6 +152,29 @@ export function useChat(sessionId) {
         // Stream closed — whatever we have is final; let the typewriter finish.
         doneRef.current = true;
       } catch (err) {
+        // User pressed Stop — keep whatever was generated so far.
+        if (err.name === "AbortError") {
+          stopTyping();
+          const finalText = targetRef.current || shownRef.current;
+          if (finalText) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: assistantId,
+                role: "assistant",
+                content: finalText,
+                timestamp: new Date().toISOString(),
+                metadata: pendingRef.current?.metadata,
+                stopped: true,
+              },
+            ]);
+          }
+          pendingRef.current = null;
+          setStreamingContent("");
+          setIsStreaming(false);
+          return;
+        }
+
         console.error("Chat error:", err);
         stopTyping();
 
@@ -174,6 +203,10 @@ export function useChat(sessionId) {
     [sessionId, isStreaming, startTyping, stopTyping],
   );
 
+  const stopStreaming = useCallback(() => {
+    controllerRef.current?.abort();
+  }, []);
+
   const clearMessages = useCallback(() => {
     stopTyping();
     targetRef.current = "";
@@ -193,6 +226,7 @@ export function useChat(sessionId) {
     streamingContent,
     error,
     sendMessage,
+    stopStreaming,
     clearMessages,
   };
 }

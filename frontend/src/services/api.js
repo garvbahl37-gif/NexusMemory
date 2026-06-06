@@ -47,6 +47,7 @@ export async function sendChatMessage({
   session_id,
   model,
   stream = true,
+  signal,
 }) {
   // Guard against missing session_id
   if (!session_id) {
@@ -60,8 +61,6 @@ export async function sendChatMessage({
     stream: stream,
   };
 
-  console.log("POST /chat payload:", payload);
-
   const response = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
     headers: {
@@ -69,6 +68,7 @@ export async function sendChatMessage({
       "X-Client-Id": CLIENT_ID,
     },
     body: JSON.stringify(payload),
+    signal,
   });
 
   if (!response.ok) {
@@ -179,6 +179,14 @@ export async function getMemories(sessionId) {
  */
 export async function addMemory({ session_id, fact, category }) {
   const { data } = await api.post("/memory", { session_id, fact, category });
+  return data;
+}
+
+/**
+ * Edit a memory entry (fact and/or category).
+ */
+export async function updateMemory(memoryId, { fact, category }) {
+  const { data } = await api.put(`/memory/${memoryId}`, { fact, category });
   return data;
 }
 

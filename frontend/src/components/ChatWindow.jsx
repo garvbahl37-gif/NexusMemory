@@ -15,6 +15,8 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Gauge,
+  Square,
+  RotateCcw,
 } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
@@ -48,6 +50,7 @@ export default function ChatWindow({
     streamingContent,
     error,
     sendMessage,
+    stopStreaming,
   } = useChat(sessionId);
 
   // Load session history when session changes
@@ -127,6 +130,37 @@ export default function ChatWindow({
     await sendText(message);
   };
 
+  // Regenerate the last assistant reply (re-runs the last user message).
+  const handleRegenerate = () => {
+    if (isStreaming) return;
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUser) return;
+    setMessages((prev) => {
+      const copy = [...prev];
+      while (copy.length && copy[copy.length - 1].role === "assistant") copy.pop();
+      return copy;
+    });
+    sendMessage(lastUser.content, selectedModel, sessionId, {
+      skipUserMessage: true,
+    });
+  };
+
+  // Edit a user message and re-run from there.
+  const handleEditResend = (messageId, newContent) => {
+    if (isStreaming || !newContent.trim()) return;
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === messageId);
+      if (idx === -1) return prev;
+      return [
+        ...prev.slice(0, idx),
+        { ...prev[idx], content: newContent.trim() },
+      ];
+    });
+    sendMessage(newContent.trim(), selectedModel, sessionId, {
+      skipUserMessage: true,
+    });
+  };
+
   // Welcome-screen suggestion cards.
   const handleSuggestion = (s) => {
     if (isStreaming) return;
@@ -181,6 +215,7 @@ export default function ChatWindow({
           input={input}
           setInput={handleTextareaChange}
           onSend={handleSend}
+          onStop={stopStreaming}
           isStreaming={isStreaming}
           onKeyDown={handleKeyDown}
           textareaRef={textareaRef}
@@ -229,6 +264,7 @@ export default function ChatWindow({
                     key={message.id}
                     message={message}
                     isStreaming={false}
+                    onEdit={handleEditResend}
                   />
                 ))}
               </AnimatePresence>
@@ -290,11 +326,27 @@ export default function ChatWindow({
           )}
         </AnimatePresence>
 
+        {/* Regenerate */}
+        {!isStreaming &&
+          messages.length > 0 &&
+          messages[messages.length - 1].role === "assistant" && (
+            <div className="relative z-10 flex justify-center pb-1">
+              <button
+                onClick={handleRegenerate}
+                className="flex items-center gap-1.5 rounded-full border border-nexus-border/70 bg-nexus-card/80 px-3 py-1 text-xs text-nexus-muted backdrop-blur-sm transition-colors hover:border-nexus-accent/40 hover:text-nexus-text"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Regenerate
+              </button>
+            </div>
+          )}
+
         {/* Input Bar */}
         <InputBar
           input={input}
           setInput={handleTextareaChange}
           onSend={handleSend}
+          onStop={stopStreaming}
           isStreaming={isStreaming}
           onKeyDown={handleKeyDown}
           textareaRef={textareaRef}
@@ -419,6 +471,7 @@ function InputBar({
   input,
   setInput,
   onSend,
+  onStop,
   isStreaming,
   onKeyDown,
   textareaRef,
@@ -476,12 +529,13 @@ function InputBar({
               </span>
             )}
 
-            {/* Send button */}
+            {/* Send / Stop button */}
             <motion.button
               whileHover={{ scale: 1.06 }}
               whileTap={{ scale: 0.94 }}
-              onClick={onSend}
-              disabled={!input.trim() || isStreaming}
+              onClick={isStreaming ? onStop : onSend}
+              disabled={!isStreaming && !input.trim()}
+              title={isStreaming ? "Stop generating" : "Send"}
               className="mb-0.5 flex-shrink-0 rounded-xl p-2.5 text-white transition-all duration-200
                          bg-gradient-to-br from-nexus-accent to-purple-600
                          shadow-lg shadow-nexus-accent/30
@@ -489,7 +543,7 @@ function InputBar({
                          disabled:cursor-not-allowed disabled:from-nexus-border disabled:to-nexus-border disabled:opacity-50 disabled:shadow-none"
             >
               {isStreaming ? (
-                <div className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <Square className="h-[18px] w-[18px]" fill="currentColor" />
               ) : (
                 <Send className="h-[18px] w-[18px]" />
               )}
