@@ -277,6 +277,34 @@ export default function MessageBubble({
             )}
           </div>
         )}
+
+        {/* Inline citations */}
+        {message.metadata?.citations?.length > 0 && (
+          <div className="mt-1.5 space-y-1 px-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-nexus-muted">
+              Sources
+            </p>
+            {message.metadata.citations.map((c, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-1.5 rounded-lg border border-nexus-border/60 bg-nexus-card/60 px-2 py-1.5"
+              >
+                <FileText className="mt-0.5 h-3 w-3 flex-shrink-0 text-nexus-accent-light" />
+                <div className="min-w-0">
+                  <p className="truncate text-[11px] font-medium text-nexus-text/90">
+                    {c.source}
+                    {c.page ? ` · p.${c.page}` : ""}
+                  </p>
+                  {c.snippet && (
+                    <p className="line-clamp-2 text-[10px] text-nexus-muted">
+                      {c.snippet}…
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   );
