@@ -49,6 +49,7 @@ export default function ChatWindow({
   const messagesContainerRef = useRef(null);
   const textareaRef = useRef(null);
   const lastSpokenRef = useRef(null);
+  const justCreatedRef = useRef(false); // session was just created locally
 
   const {
     messages,
@@ -60,11 +61,18 @@ export default function ChatWindow({
     stopStreaming,
   } = useChat(sessionId);
 
-  // Load session history when session changes
+  // Load session history when session changes — but NOT for a session we just
+  // created by sending the first message (that would clobber the optimistic
+  // messages + streaming and flash "Loading history…").
   useEffect(() => {
     if (sessionId) {
-      loadSessionHistory();
-      loadMemories();
+      if (justCreatedRef.current) {
+        justCreatedRef.current = false;
+        loadMemories();
+      } else {
+        loadSessionHistory();
+        loadMemories();
+      }
     } else {
       setMessages([]);
     }
@@ -132,6 +140,7 @@ export default function ChatWindow({
     // first message isn't lost to a not-yet-propagated state update.
     let activeSessionId = sessionId;
     if (!activeSessionId) {
+      justCreatedRef.current = true; // skip history-load for this new session
       activeSessionId = onNewSession();
     }
 
@@ -249,7 +258,10 @@ export default function ChatWindow({
     if (isStreaming) return;
     if (s.action === "upload") {
       // Spin up a session and reveal the upload panel.
-      if (!sessionId) onNewSession();
+      if (!sessionId) {
+        justCreatedRef.current = true;
+        onNewSession();
+      }
       setShowUpload(true);
       return;
     }
