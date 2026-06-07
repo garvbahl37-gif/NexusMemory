@@ -99,10 +99,12 @@ async def root():
 @app.get("/health")
 async def health_check():
     llm_status = await check_llm_health()
+    from services.cache import cache_status
     return {
         "api": "healthy",
         "ollama": llm_status,  # key kept for frontend compatibility
         "model": llm_status.get("current_model"),
+        "cache": cache_status(),
     }
 
 

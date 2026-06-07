@@ -59,6 +59,11 @@ def cache_set(key: str, value, ttl: int = None):
         pass
 
 
+def cache_status() -> str:
+    """'connected' if Redis is reachable, else 'disabled'."""
+    return "connected" if _get() else "disabled"
+
+
 def cache_del(*keys: str):
     c = _get()
     if not c or not keys:
