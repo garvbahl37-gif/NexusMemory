@@ -11,6 +11,7 @@ from memory.store import (
     update_memory,
     delete_memory,
 )
+from services.cache import cache_get, cache_set, cache_del
 
 router = APIRouter()
 
@@ -49,10 +50,20 @@ async def get_memories(
     Falls back to per-session if no client id is present.
     """
     if x_client_id:
+        ck = f"mem:{x_client_id}"
+        cached = cache_get(ck)
+        if cached is not None:
+            return cached
         memories = get_client_memories(db=db, client_id=x_client_id)
-    else:
-        memories = get_all_memories(db=db, session_id=session_id)
+        result = {
+            "session_id": session_id,
+            "total": len(memories),
+            "memories": [_serialize(m) for m in memories],
+        }
+        cache_set(ck, result)
+        return result
 
+    memories = get_all_memories(db=db, session_id=session_id)
     return {
         "session_id": session_id,
         "total": len(memories),
@@ -94,6 +105,8 @@ async def add_memory_manually(
         dedup=False,
     )
 
+    cache_del(f"mem:{x_client_id}")
+
     return {
         "status": "stored",
         "id": entry.id,
@@ -107,6 +120,7 @@ async def edit_memory(
     memory_id: int,
     request: UpdateMemoryRequest,
     db: Session = Depends(get_db),
+    x_client_id: Optional[str] = Header(default=None),
 ):
     """Edit a memory's fact and/or category."""
     entry = update_memory(
@@ -118,6 +132,7 @@ async def edit_memory(
     if not entry:
         raise HTTPException(status_code=404, detail="Memory not found.")
 
+    cache_del(f"mem:{x_client_id}")
     return {"status": "updated", **_serialize(entry)}
 
 
@@ -125,10 +140,12 @@ async def edit_memory(
 async def remove_memory(
     memory_id: int,
     db: Session = Depends(get_db),
+    x_client_id: Optional[str] = Header(default=None),
 ):
     """Delete a specific memory entry."""
     success = delete_memory(db=db, memory_id=memory_id)
     if not success:
         raise HTTPException(status_code=404, detail="Memory not found.")
 
+    cache_del(f"mem:{x_client_id}")
     return {"status": "deleted", "id": memory_id}

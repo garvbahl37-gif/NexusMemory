@@ -7,6 +7,7 @@ from memory.store import retrieve_relevant_memories, store_memory
 from memory.extractor import extract_memories_from_conversation
 from rag.retriever import retrieve_relevant_chunks, format_context_from_docs
 from services.llm import get_llm
+from services.cache import cache_get, cache_set, cache_del
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnableSequence
 import uuid
@@ -82,6 +83,9 @@ async def chat(
     )
     db.add(user_msg)
     db.commit()
+
+    # The session list + this session's messages changed.
+    cache_del(f"msgs:{session_id}", f"sessions:{x_client_id}")
 
     # Retrieve relevant memories (cross-session, scoped to this client)
     memories = retrieve_relevant_memories(
@@ -252,6 +256,13 @@ async def chat(
                         client_id=x_client_id,
                     )
 
+                # Assistant message + possibly new memories were stored.
+                cache_del(
+                    f"msgs:{session_id}",
+                    f"sessions:{x_client_id}",
+                    f"mem:{x_client_id}",
+                )
+
                 # Send done signal
                 done_data = json.dumps({"type": "done"})
                 yield f"data: {done_data}\n\n"
@@ -311,6 +322,11 @@ async def get_sessions(
     if not x_client_id:
         return []
 
+    ck = f"sessions:{x_client_id}"
+    cached = cache_get(ck)
+    if cached is not None:
+        return cached
+
     sessions = (
         db.query(ChatSession)
         .filter(ChatSession.client_id == x_client_id)
@@ -318,7 +334,7 @@ async def get_sessions(
         .limit(50)
         .all()
     )
-    return [
+    result = [
         {
             "session_id": s.session_id,
             "title": s.title,
@@ -327,6 +343,8 @@ async def get_sessions(
         }
         for s in sessions
     ]
+    cache_set(ck, result)
+    return result
 
 
 def _assert_owner(db, session_id, x_client_id):
@@ -348,13 +366,19 @@ async def get_session_messages(
 ):
     """Get all messages for a session (only if it's yours)."""
     _assert_owner(db, session_id, x_client_id)
+
+    ck = f"msgs:{session_id}"
+    cached = cache_get(ck)
+    if cached is not None:
+        return cached
+
     messages = (
         db.query(ChatMessage)
         .filter(ChatMessage.session_id == session_id)
         .order_by(ChatMessage.timestamp.asc())
         .all()
     )
-    return [
+    result = [
         {
             "id": m.id,
             "role": m.role,
@@ -363,6 +387,8 @@ async def get_session_messages(
         }
         for m in messages
     ]
+    cache_set(ck, result)
+    return result
 
 
 @router.delete("/chat/sessions/{session_id}")
@@ -373,6 +399,7 @@ async def delete_session(
 ):
     """Delete a chat session and its messages (only if it's yours)."""
     _assert_owner(db, session_id, x_client_id)
+    cache_del(f"msgs:{session_id}", f"sessions:{x_client_id}")
     db.query(ChatMessage).filter(
         ChatMessage.session_id == session_id
     ).delete()

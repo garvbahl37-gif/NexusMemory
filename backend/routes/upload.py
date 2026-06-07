@@ -11,6 +11,7 @@ from services.storage import (
     delete_object,
     signed_url,
 )
+from services.cache import cache_get, cache_set, cache_del
 from config import settings
 import aiofiles
 import uuid
@@ -106,6 +107,8 @@ async def upload_document(
         db.commit()
         db.refresh(doc_record)
 
+        cache_del(f"docs:{session_id}")
+
         logger.info(
             f"Processed document: {file.filename} "
             f"({len(documents)} pages, {len(chunks)} chunks)"
@@ -144,6 +147,11 @@ async def get_session_documents(
     db: Session = Depends(get_db),
 ):
     """Get all documents uploaded for a session."""
+    ck = f"docs:{session_id}"
+    cached = cache_get(ck)
+    if cached is not None:
+        return cached
+
     documents = (
         db.query(UploadedDocument)
         .filter(UploadedDocument.session_id == session_id)
@@ -151,7 +159,7 @@ async def get_session_documents(
         .all()
     )
 
-    return [
+    result = [
         {
             "id": d.id,
             "filename": d.filename,
@@ -161,6 +169,8 @@ async def get_session_documents(
         }
         for d in documents
     ]
+    cache_set(ck, result)
+    return result
 
 
 @router.delete("/documents/{document_id}")
@@ -191,8 +201,11 @@ async def delete_document(
         await delete_object(doc.storage_path)
 
     # Delete record
+    session_id = doc.session_id
     db.delete(doc)
     db.commit()
+
+    cache_del(f"docs:{session_id}")
 
     return {"status": "deleted", "filename": doc.filename}
 

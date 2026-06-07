@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = ""
     SUPABASE_BUCKET:      str = "nexus-uploads"
 
+    # Redis cache. Defaults to the in-container Redis; if unreachable, the app
+    # silently falls back to querying the DB directly.
+    REDIS_URL: str = "redis://localhost:6379"
+    CACHE_TTL: int = 120
+
     BASE_DIR:     Path = Path(__file__).parent
     UPLOAD_DIR:   Path = Path(__file__).parent / "uploads"
     CHROMA_DIR:   Path = Path(__file__).parent / "chroma_db"
