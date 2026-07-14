@@ -30,7 +30,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="relative flex h-screen overflow-hidden gap-2.5 p-2.5 bg-[radial-gradient(125%_125%_at_50%_0%,#15151f_0%,#0a0a0f_55%)]">
+    <div className="relative flex h-screen overflow-hidden gap-2.5 p-2.5 bg-[radial-gradient(125%_125%_at_50%_0%,#131315_0%,#0B0B0C_55%)]">
       {/* Cinematic boot sequence on entry */}
       <AnimatePresence>
         {booting && (
@@ -48,7 +48,7 @@ export default function App() {
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 260, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
+              transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
               className="hidden md:flex flex-shrink-0 overflow-hidden"
             >
               <div className="w-[260px] h-full">
@@ -73,7 +73,7 @@ export default function App() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setSidebarOpen(false)}
-                className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
+                className="md:hidden fixed inset-0 bg-black/[0.72] backdrop-blur-sm z-30"
               />
 
               {/* Mobile sidebar */}
@@ -82,7 +82,7 @@ export default function App() {
                 initial={{ x: -280 }}
                 animate={{ x: 0 }}
                 exit={{ x: -280 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
+                transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
                 className="md:hidden fixed left-2.5 top-2.5 bottom-2.5 w-[260px] z-40"
               >
                 <Sidebar
@@ -99,7 +99,7 @@ export default function App() {
       </>
 
       {/* Main Chat Area — floating rounded panel */}
-      <div className="flex-1 flex flex-col min-w-0 relative rounded-2xl border border-nexus-border/70 overflow-hidden bg-nexus-bg shadow-2xl shadow-black/40">
+      <div className="flex-1 flex flex-col min-w-0 relative rounded-2xl border border-nexus-border overflow-hidden bg-nexus-bg shadow-nexus-e2">
         <ChatWindow
           sessionId={currentSessionId}
           onNewSession={handleNewSessionCreated}

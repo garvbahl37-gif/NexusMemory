@@ -42,11 +42,11 @@ function SpeakButton({ text }) {
   return (
     <button
       onClick={toggle}
-      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-nexus-muted hover:text-nexus-text"
+      className="opacity-0 group-hover:opacity-100 rounded-md p-1 text-nexus-subtle transition-all duration-micro ease-nexus hover:bg-nexus-elevated hover:text-nexus-text focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
       title={speaking ? "Stop" : "Read aloud"}
     >
       {speaking ? (
-        <VolumeX className="w-3.5 h-3.5 text-nexus-accent-light" />
+        <VolumeX className="w-3.5 h-3.5 text-nexus-accent" />
       ) : (
         <Volume2 className="w-3.5 h-3.5" />
       )}
@@ -66,8 +66,10 @@ function CopyButton({ text }) {
   return (
     <button
       onClick={handleCopy}
-      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded
-                 text-nexus-muted hover:text-nexus-text"
+      className="opacity-0 group-hover:opacity-100 rounded-md p-1 text-nexus-subtle
+                 transition-all duration-micro ease-nexus hover:bg-nexus-elevated hover:text-nexus-text
+                 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2
+                 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
       title="Copy message"
     >
       {copied ? (
@@ -95,7 +97,7 @@ function PreBlock({ children }) {
     <div className="group/code relative my-3">
       <button
         onClick={handleCopy}
-        className="absolute right-2 top-2 z-10 rounded-md border border-nexus-border/70 bg-nexus-surface/90 p-1.5 text-nexus-muted opacity-0 backdrop-blur-sm transition-opacity hover:text-nexus-text group-hover/code:opacity-100"
+        className="absolute right-2 top-2 z-10 rounded-md border border-nexus-border bg-nexus-elevated/90 p-1.5 text-nexus-muted opacity-0 shadow-nexus-e1 backdrop-blur-sm transition-all duration-micro ease-nexus hover:text-nexus-text group-hover/code:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
         title="Copy code"
       >
         {copied ? (
@@ -143,7 +145,7 @@ export default function MessageBubble({
         className="group mb-5 flex flex-row-reverse items-start gap-3"
       >
         {/* User Avatar */}
-        <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-nexus-card border border-nexus-border ring-1 ring-white/5">
+        <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-nexus-border bg-nexus-elevated shadow-nexus-e1">
           <User className="h-4 w-4 text-nexus-muted" />
         </div>
 
@@ -156,17 +158,19 @@ export default function MessageBubble({
                   setEditing(true);
                 }}
                 title="Edit & resend"
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-nexus-muted hover:text-nexus-text"
+                className="opacity-0 group-hover:opacity-100 rounded-md p-1 text-nexus-subtle transition-all duration-micro ease-nexus hover:bg-nexus-elevated hover:text-nexus-text focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
             )}
             <CopyButton text={message.content} />
-            <span className="text-[11px] text-nexus-muted">{timestamp}</span>
+            <span className="font-mono text-[11px] tabular-nums text-nexus-subtle">
+              {timestamp}
+            </span>
           </div>
 
           {editing ? (
-            <div className="w-[min(78vw,32rem)] rounded-2xl rounded-tr-md border border-nexus-accent/40 bg-nexus-surface p-2">
+            <div className="w-[min(78vw,32rem)] rounded-2xl rounded-tr-md border border-nexus-accent-rim bg-nexus-surface p-2 shadow-nexus-e2">
               <textarea
                 autoFocus
                 value={draft}
@@ -184,13 +188,13 @@ export default function MessageBubble({
               <div className="mt-1 flex justify-end gap-2">
                 <button
                   onClick={() => setEditing(false)}
-                  className="rounded-md px-2 py-1 text-xs text-nexus-muted hover:text-nexus-text"
+                  className="rounded-md px-2 py-1 text-xs text-nexus-muted transition-colors duration-micro ease-nexus hover:bg-nexus-elevated hover:text-nexus-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={submitEdit}
-                  className="rounded-md bg-nexus-accent px-3 py-1 text-xs font-medium text-white hover:bg-nexus-accent-light"
+                  className="rounded-md bg-nexus-accent px-3 py-1 text-xs font-medium text-nexus-accent-ink transition-all duration-micro ease-nexus hover:bg-nexus-accent-light active:scale-[0.98] active:bg-nexus-accent-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
                 >
                   Send
                 </button>
@@ -198,9 +202,9 @@ export default function MessageBubble({
             </div>
           ) : (
             <div
-              className="rounded-2xl rounded-tr-md bg-gradient-to-br from-nexus-accent to-purple-600
-                         px-4 py-2.5 text-sm leading-relaxed text-white
-                         shadow-lg shadow-nexus-accent/20 ring-1 ring-white/10
+              className="rounded-2xl rounded-tr-md border border-nexus-border border-r-2 border-r-nexus-accent
+                         bg-nexus-elevated px-4 py-2.5 text-sm leading-relaxed text-nexus-text
+                         shadow-nexus-e2
                          whitespace-pre-wrap break-words"
             >
               {message.content}
@@ -220,29 +224,33 @@ export default function MessageBubble({
       className="group mb-5 flex items-start gap-3"
     >
       {/* Nexus Avatar */}
-      <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30 ring-1 ring-white/10">
-        <Zap className="h-4 w-4 text-white" />
+      <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-nexus-accent-rim bg-nexus-elevated shadow-nexus-e1">
+        <Zap className="h-4 w-4 text-nexus-accent" />
       </div>
 
       <div className="flex min-w-0 max-w-[82%] flex-col gap-1">
         <div className="flex items-center gap-2 px-1">
-          <span className="text-[11px] font-semibold text-nexus-accent-light">
+          <span className="text-[11px] font-medium uppercase tracking-label text-nexus-muted">
             Nexus
           </span>
-          <span className="text-[11px] text-nexus-muted">{timestamp}</span>
+          <span className="font-mono text-[11px] tabular-nums text-nexus-subtle">
+            {timestamp}
+          </span>
           <CopyButton text={message.content} />
           {!isStreaming && <SpeakButton text={message.content} />}
         </div>
 
-        {/* Glass card with a subtle gradient-edge highlight */}
+        {/* Machined card: 1px edge ring + inset top hairline on the inner surface */}
         <div
-          className={`rounded-2xl rounded-tl-md p-[1px] shadow-lg shadow-black/20 ${
-            message.isError
-              ? "bg-nexus-error/40"
-              : "bg-gradient-to-br from-white/12 to-white/[0.03]"
+          className={`rounded-2xl rounded-tl-md p-[1px] shadow-nexus-e2 ${
+            message.isError ? "bg-nexus-error/50" : "bg-nexus-border"
           }`}
         >
-          <div className="rounded-2xl rounded-tl-md bg-nexus-card px-4 py-3 text-sm">
+          <div
+            className={`rounded-2xl rounded-tl-md px-4 py-3 text-sm leading-relaxed text-nexus-text shadow-nexus-e1 ${
+              message.isError ? "bg-nexus-error/[0.08]" : "bg-nexus-card"
+            }`}
+          >
             <div className="prose-nexus">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -264,14 +272,14 @@ export default function MessageBubble({
         {(memoriesUsed > 0 || docsRetrieved > 0) && (
           <div className="mt-1 flex items-center gap-2 px-1">
             {memoriesUsed > 0 && (
-              <span className="flex items-center gap-1 text-xs text-indigo-400 bg-indigo-950/40 border border-indigo-800/30 rounded-full px-2 py-0.5">
-                <Brain className="w-2.5 h-2.5" />
+              <span className="flex items-center gap-1.5 rounded-full border border-nexus-border bg-nexus-card px-2 py-0.5 text-[11px] text-nexus-muted shadow-nexus-e1">
+                <Brain className="h-2.5 w-2.5 text-nexus-subtle" />
                 {memoriesUsed} memories
               </span>
             )}
             {docsRetrieved > 0 && (
-              <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/30 rounded-full px-2 py-0.5">
-                <FileText className="w-2.5 h-2.5" />
+              <span className="flex items-center gap-1.5 rounded-full border border-nexus-border bg-nexus-card px-2 py-0.5 text-[11px] text-nexus-muted shadow-nexus-e1">
+                <FileText className="h-2.5 w-2.5 text-nexus-subtle" />
                 {docsRetrieved} chunks
               </span>
             )}
@@ -281,22 +289,22 @@ export default function MessageBubble({
         {/* Inline citations */}
         {message.metadata?.citations?.length > 0 && (
           <div className="mt-1.5 space-y-1 px-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-nexus-muted">
+            <p className="text-[11px] font-medium uppercase tracking-label text-nexus-muted">
               Sources
             </p>
             {message.metadata.citations.map((c, i) => (
               <div
                 key={i}
-                className="flex items-start gap-1.5 rounded-lg border border-nexus-border/60 bg-nexus-card/60 px-2 py-1.5"
+                className="flex items-start gap-2 rounded-lg border border-nexus-border bg-nexus-card px-2 py-1.5 shadow-nexus-e1 transition-colors duration-micro ease-nexus hover:bg-nexus-elevated"
               >
-                <FileText className="mt-0.5 h-3 w-3 flex-shrink-0 text-nexus-accent-light" />
+                <FileText className="mt-0.5 h-3 w-3 flex-shrink-0 text-nexus-subtle" />
                 <div className="min-w-0">
-                  <p className="truncate text-[11px] font-medium text-nexus-text/90">
+                  <p className="truncate text-[11px] font-medium text-nexus-text">
                     {c.source}
                     {c.page ? ` · p.${c.page}` : ""}
                   </p>
                   {c.snippet && (
-                    <p className="line-clamp-2 text-[10px] text-nexus-muted">
+                    <p className="line-clamp-2 text-[11px] leading-relaxed text-nexus-muted">
                       {c.snippet}…
                     </p>
                   )}

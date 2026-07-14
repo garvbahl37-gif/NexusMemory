@@ -339,7 +339,7 @@ export default function ChatWindow({
       />
       {/* Main Chat Area — static aurora backdrop painted as a CSS background
           (no animated layers → zero scroll cost). */}
-      <div className="relative flex-1 flex flex-col min-w-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(99,102,241,0.08),transparent_70%),radial-gradient(55%_45%_at_100%_100%,rgba(34,211,238,0.06),transparent_70%),radial-gradient(50%_45%_at_0%_95%,rgba(217,70,239,0.05),transparent_70%)]">
+      <div className="relative flex-1 flex flex-col min-w-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(201,162,39,0.07),transparent_70%),radial-gradient(55%_45%_at_100%_100%,rgba(227,199,102,0.05),transparent_70%),radial-gradient(50%_45%_at_0%_95%,rgba(255,255,255,0.03),transparent_70%)]">
         {/* Top Bar */}
         <TopBar
           onSidebarToggle={onSidebarToggle}
@@ -411,8 +411,11 @@ export default function ChatWindow({
               exit={{ opacity: 0, y: 10 }}
               onClick={scrollToBottom}
               className="absolute bottom-24 right-6 p-2 rounded-full
-                         bg-nexus-card border border-nexus-border shadow-lg
-                         text-nexus-muted hover:text-nexus-text transition-colors z-10"
+                         bg-nexus-card border border-nexus-border shadow-nexus-e2
+                         text-nexus-muted hover:bg-nexus-elevated hover:text-nexus-text
+                         transition-colors duration-micro ease-nexus z-10
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent
+                         focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
             >
               <ChevronDown className="w-4 h-4" />
             </motion.button>
@@ -443,7 +446,7 @@ export default function ChatWindow({
             <div className="relative z-10 flex justify-center pb-1">
               <button
                 onClick={handleRegenerate}
-                className="flex items-center gap-1.5 rounded-full border border-nexus-border/70 bg-nexus-card/80 px-3 py-1 text-xs text-nexus-muted backdrop-blur-sm transition-colors hover:border-nexus-accent/40 hover:text-nexus-text"
+                className="flex items-center gap-1.5 rounded-full border border-nexus-border bg-nexus-card/80 px-3 py-1 text-xs text-nexus-muted shadow-nexus-hairline backdrop-blur-sm transition-colors duration-micro ease-nexus hover:border-nexus-accent-rim hover:bg-nexus-elevated hover:text-nexus-text focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
               >
                 <RotateCcw className="h-3 w-3" />
                 Regenerate
@@ -508,8 +511,8 @@ function TopBar({
   return (
     <div
       className="flex items-center justify-between px-4 py-3
-                    border-b border-nexus-border/60 flex-shrink-0
-                    bg-nexus-surface/70 backdrop-blur-xl
+                    border-b border-nexus-border flex-shrink-0
+                    bg-nexus-surface/80 backdrop-blur-xl
                     min-w-0 overflow-hidden"
     >
       {/* Left side */}
@@ -517,28 +520,29 @@ function TopBar({
         {/* Mobile sidebar toggle */}
         <button
           onClick={onSidebarToggle}
-          className="md:hidden p-1.5 rounded-lg hover:bg-nexus-card
+          className="md:hidden p-1.5 rounded-lg hover:bg-nexus-elevated
                      text-nexus-muted hover:text-nexus-text
-                     transition-colors flex-shrink-0"
+                     transition-colors duration-micro ease-nexus flex-shrink-0
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent
+                     focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
         >
           <Menu className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-2.5 flex-shrink-0">
           <div
-            className="relative w-8 h-8 rounded-xl bg-gradient-to-br
-                          from-indigo-500 via-purple-500 to-cyan-500
+            className="relative w-8 h-8 rounded-xl bg-nexus-elevated
                           flex items-center justify-center flex-shrink-0
-                          shadow-lg shadow-indigo-500/30 ring-1 ring-white/10"
+                          border border-nexus-accent-rim shadow-nexus-e2"
           >
-            <Zap className="w-4 h-4 text-white" />
+            <Zap className="w-4 h-4 text-nexus-accent" />
           </div>
           <div className="hidden sm:flex flex-col leading-none">
-            <span className="text-sm font-semibold gradient-text whitespace-nowrap">
+            <span className="text-sm font-semibold gradient-text tracking-tight whitespace-nowrap">
               Nexus Memory
             </span>
-            <span className="mt-1 flex items-center gap-1 text-[10px] text-nexus-muted">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+            <span className="mt-1 flex items-center gap-1 text-[10px] uppercase tracking-label text-nexus-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-nexus-success" />
               online
             </span>
           </div>
@@ -552,20 +556,22 @@ function TopBar({
           <button
             onClick={() => setShowMemory(!showMemory)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5
-                         rounded-lg text-xs font-medium border
-                         transition-colors duration-200 whitespace-nowrap focus:outline-none
+                         rounded-lg text-[11px] font-medium uppercase tracking-label border
+                         transition-colors duration-micro ease-nexus whitespace-nowrap
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent
+                         focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg
                          ${
                            showMemory
-                             ? "bg-nexus-accent/10 border-nexus-accent/30 text-nexus-accent-light"
-                             : "border-transparent text-nexus-muted hover:text-nexus-text hover:bg-nexus-card"
+                             ? "bg-nexus-accent-soft border-nexus-accent-rim text-nexus-accent-light"
+                             : "border-transparent text-nexus-muted hover:text-nexus-text hover:bg-nexus-elevated"
                          }`}
           >
             <Brain className="w-3.5 h-3.5 flex-shrink-0" />
             {memoryCount > 0 && (
               <span
-                className="bg-nexus-accent/20 text-nexus-accent-light
-                               px-1.5 py-0.5 rounded-full text-xs
-                               font-medium leading-none"
+                className="bg-nexus-accent text-nexus-accent-ink
+                               px-1.5 py-0.5 rounded-full text-[11px]
+                               font-medium leading-none tracking-normal"
               >
                 {memoryCount}
               </span>
@@ -579,7 +585,7 @@ function TopBar({
           <button
             onClick={onExport}
             title="Export chat as Markdown"
-            className="rounded-lg p-1.5 text-nexus-muted transition-colors hover:bg-nexus-card hover:text-nexus-text"
+            className="rounded-lg p-1.5 text-nexus-muted transition-colors duration-micro ease-nexus hover:bg-nexus-elevated hover:text-nexus-text focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
           >
             <Download className="h-4 w-4" />
           </button>
@@ -589,7 +595,7 @@ function TopBar({
         <button
           onClick={onOpenSettings}
           title="Settings"
-          className="rounded-lg p-1.5 text-nexus-muted transition-colors hover:bg-nexus-card hover:text-nexus-text"
+          className="rounded-lg p-1.5 text-nexus-muted transition-colors duration-micro ease-nexus hover:bg-nexus-elevated hover:text-nexus-text focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
         >
           <Settings className="h-4 w-4" />
         </button>
@@ -635,27 +641,28 @@ function InputBar({
   };
 
   return (
-    <div className="flex-shrink-0 border-t border-nexus-border/60 bg-nexus-surface/70 backdrop-blur-xl px-4 py-4">
+    <div className="flex-shrink-0 border-t border-nexus-border bg-nexus-surface/80 backdrop-blur-xl px-4 py-4">
       <div className="max-w-3xl mx-auto">
-        {/* Premium input capsule — gradient border that lights up on focus */}
+        {/* Composer — graphite capsule whose rim warms to gold on focus */}
         <div
-          className="group relative rounded-2xl p-[1px] transition-all duration-300
-                     bg-gradient-to-r from-white/10 via-white/[0.06] to-white/10
-                     focus-within:from-nexus-accent/70 focus-within:via-purple-500/40 focus-within:to-cyan-400/60
-                     focus-within:shadow-[0_0_34px_-8px_rgba(99,102,241,0.55)]"
+          className="group relative rounded-2xl border border-nexus-border bg-nexus-surface
+                     shadow-nexus-e1 transition-all duration-panel ease-nexus
+                     focus-within:border-nexus-accent-rim focus-within:shadow-nexus-glow"
         >
-          <div className="flex items-end gap-1.5 rounded-2xl bg-nexus-card/90 backdrop-blur-xl px-2 py-1.5">
+          <div className="flex items-end gap-1.5 rounded-2xl px-2 py-1.5">
             {/* Upload toggle */}
             <button
               onClick={() => setShowUpload(!showUpload)}
               disabled={!sessionId}
               title={sessionId ? "Upload document" : "Start a chat first"}
-              className={`mb-1 flex-shrink-0 rounded-xl p-2 transition-all duration-200
+              className={`mb-1 flex-shrink-0 rounded-xl p-2 transition-colors duration-micro ease-nexus
                           disabled:cursor-not-allowed disabled:opacity-30
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent
+                          focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-surface
                           ${
                             showUpload
-                              ? "bg-nexus-accent/15 text-nexus-accent-light"
-                              : "text-nexus-muted hover:bg-white/5 hover:text-nexus-accent-light"
+                              ? "bg-nexus-accent-soft text-nexus-accent-light"
+                              : "text-nexus-muted hover:bg-nexus-elevated hover:text-nexus-text"
                           }`}
             >
               <Paperclip className="h-[18px] w-[18px]" />
@@ -666,10 +673,12 @@ function InputBar({
               <button
                 onClick={toggleVoice}
                 title={listening ? "Stop listening" : "Voice input"}
-                className={`mb-1 flex-shrink-0 rounded-xl p-2 transition-all duration-200 ${
+                className={`mb-1 flex-shrink-0 rounded-xl p-2 transition-colors duration-micro ease-nexus
+                            focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent
+                            focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-surface ${
                   listening
-                    ? "bg-red-500/15 text-red-400 animate-pulse"
-                    : "text-nexus-muted hover:bg-white/5 hover:text-nexus-accent-light"
+                    ? "bg-nexus-error/15 text-nexus-error animate-pulse"
+                    : "text-nexus-muted hover:bg-nexus-elevated hover:text-nexus-text"
                 }`}
               >
                 <Mic className="h-[18px] w-[18px]" />
@@ -686,14 +695,14 @@ function InputBar({
               rows={1}
               disabled={isStreaming}
               className="max-h-40 flex-1 resize-none border-0 bg-transparent py-2.5 text-sm
-                         leading-relaxed text-nexus-text placeholder-nexus-muted/70
+                         leading-relaxed text-nexus-text placeholder-nexus-muted
                          outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
               style={{ minHeight: "44px" }}
             />
 
             {/* Char counter */}
             {input.length > 500 && (
-              <span className="mb-2 self-center text-[10px] text-nexus-muted">
+              <span className="mb-2 self-center text-[11px] text-nexus-subtle">
                 {input.length}
               </span>
             )}
@@ -705,11 +714,12 @@ function InputBar({
               onClick={isStreaming ? onStop : onSend}
               disabled={!isStreaming && !input.trim()}
               title={isStreaming ? "Stop generating" : "Send"}
-              className="mb-0.5 flex-shrink-0 rounded-xl p-2.5 text-white transition-all duration-200
-                         bg-gradient-to-br from-nexus-accent to-purple-600
-                         shadow-lg shadow-nexus-accent/30
-                         hover:shadow-nexus-accent/50 hover:brightness-110
-                         disabled:cursor-not-allowed disabled:from-nexus-border disabled:to-nexus-border disabled:opacity-50 disabled:shadow-none"
+              className="mb-0.5 flex-shrink-0 rounded-xl p-2.5 transition-colors duration-micro ease-nexus
+                         bg-nexus-accent text-nexus-accent-ink
+                         hover:bg-nexus-accent-light active:bg-nexus-accent-dark
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent
+                         focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-surface
+                         disabled:cursor-not-allowed disabled:bg-nexus-elevated disabled:text-nexus-subtle"
             >
               {isStreaming ? (
                 <Square className="h-[18px] w-[18px]" fill="currentColor" />
@@ -721,7 +731,7 @@ function InputBar({
         </div>
 
         {/* Bottom hint */}
-        <p className="mt-2.5 hidden text-center text-[11px] text-nexus-muted/70 sm:block">
+        <p className="mt-2.5 hidden text-center text-[11px] text-nexus-subtle sm:block">
           Nexus Memory · lightning-fast responses · remembers you across sessions
         </p>
       </div>
@@ -737,18 +747,18 @@ function WelcomeAmbient() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <div
-        className="aurora-orb absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-600/20 blur-[70px]"
+        className="aurora-orb absolute -top-24 -left-24 h-72 w-72 rounded-full bg-[rgba(201,162,39,0.07)] blur-[70px]"
         style={{ animation: "auroraDriftA 22s ease-in-out infinite" }}
       />
       <div
-        className="aurora-orb absolute top-1/4 -right-28 h-80 w-80 rounded-full bg-cyan-500/15 blur-[80px]"
+        className="aurora-orb absolute top-1/4 -right-28 h-80 w-80 rounded-full bg-[rgba(227,199,102,0.05)] blur-[80px]"
         style={{ animation: "auroraDriftB 26s ease-in-out infinite" }}
       />
       <div
-        className="aurora-orb absolute -bottom-20 left-1/3 h-72 w-72 rounded-full bg-fuchsia-600/15 blur-[70px]"
+        className="aurora-orb absolute -bottom-20 left-1/3 h-72 w-72 rounded-full bg-[rgba(255,255,255,0.03)] blur-[70px]"
         style={{ animation: "auroraDriftC 24s ease-in-out infinite" }}
       />
-      <div className="absolute inset-0 opacity-[0.10] [background:linear-gradient(rgba(99,102,241,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.5)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)] [-webkit-mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]" />
+      <div className="absolute inset-0 opacity-[0.10] [background:linear-gradient(rgba(201,162,39,0.18)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:42px_42px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)] [-webkit-mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]" />
     </div>
   );
 }
@@ -760,32 +770,32 @@ function WelcomeScreen({ onSuggestion }) {
       label: "Get started",
       prompt: "What's your name and what can you do?",
       action: "send",
-      accent: "from-indigo-500 to-purple-600",
-      glow: "group-hover:shadow-indigo-500/40",
+      accent: "bg-nexus-elevated border border-nexus-border",
+      glow: "group-hover:shadow-nexus-e2",
     },
     {
       icon: Brain,
       label: "Teach me a fact",
       prompt: "My favorite framework is FastAPI — remember that.",
       action: "send",
-      accent: "from-fuchsia-500 to-pink-600",
-      glow: "group-hover:shadow-fuchsia-500/40",
+      accent: "bg-nexus-elevated border border-nexus-border",
+      glow: "group-hover:shadow-nexus-e2",
     },
     {
       icon: FileText,
       label: "Chat with a PDF",
       prompt: "Upload a PDF and I'll answer questions from it.",
       action: "upload",
-      accent: "from-cyan-500 to-blue-600",
-      glow: "group-hover:shadow-cyan-500/40",
+      accent: "bg-nexus-elevated border border-nexus-border",
+      glow: "group-hover:shadow-nexus-e2",
     },
     {
       icon: History,
       label: "Recall memory",
       prompt: "What do you remember about me from before?",
       action: "send",
-      accent: "from-emerald-500 to-teal-600",
-      glow: "group-hover:shadow-emerald-500/40",
+      accent: "bg-nexus-elevated border border-nexus-border",
+      glow: "group-hover:shadow-nexus-e2",
     },
   ];
 
@@ -806,26 +816,26 @@ function WelcomeScreen({ onSuggestion }) {
       {/* Animated logo */}
       <div className="relative mx-auto mb-7 h-20 w-20">
         <motion.div
-          className="absolute -inset-4 rounded-full bg-nexus-accent/20 blur-2xl will-change-[opacity]"
+          className="absolute -inset-4 rounded-full bg-[rgba(201,162,39,0.12)] blur-2xl will-change-[opacity]"
           animate={{ opacity: [0.4, 0.7, 0.4] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute inset-0 rounded-3xl border border-nexus-accent/30"
+          className="absolute inset-0 rounded-3xl border border-nexus-accent-rim"
           animate={{ rotate: 360 }}
           transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
         />
         <motion.div
-          className="absolute -inset-1 rounded-[1.4rem] border border-cyan-400/20"
+          className="absolute -inset-1 rounded-[1.4rem] border border-nexus-border"
           animate={{ rotate: -360 }}
           transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         />
         <motion.div
-          className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-500 shadow-2xl shadow-indigo-500/30"
+          className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-nexus-elevated border border-nexus-accent-rim shadow-nexus-e3"
           animate={{ y: [0, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         >
-          <Zap className="h-9 w-9 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.85)]" />
+          <Zap className="h-9 w-9 text-nexus-accent" />
         </motion.div>
       </div>
 
@@ -834,13 +844,13 @@ function WelcomeScreen({ onSuggestion }) {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
-        className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1"
+        className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-nexus-border bg-nexus-card px-3 py-1 shadow-nexus-e1"
       >
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-nexus-success/70" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-nexus-success" />
         </span>
-        <span className="text-[11px] font-medium tracking-wide text-emerald-300/90">
+        <span className="text-[11px] font-medium uppercase tracking-label text-nexus-muted">
           Online · Groq Llama 3.3
         </span>
       </motion.div>
@@ -850,8 +860,8 @@ function WelcomeScreen({ onSuggestion }) {
       </h1>
 
       <p className="text-nexus-muted text-sm sm:text-base mb-6 leading-relaxed max-w-md mx-auto">
-        An AI assistant that <span className="text-nexus-text/90">remembers you</span>,
-        answers from <span className="text-nexus-text/90">your documents</span>, and
+        An AI assistant that <span className="text-nexus-text">remembers you</span>,
+        answers from <span className="text-nexus-text">your documents</span>, and
         replies in an instant.
       </p>
 
@@ -865,9 +875,9 @@ function WelcomeScreen({ onSuggestion }) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 + i * 0.06 }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-nexus-border/70 bg-nexus-card/50 px-3 py-1 text-[11px] text-nexus-muted backdrop-blur-sm"
+              className="inline-flex items-center gap-1.5 rounded-full border border-nexus-border bg-nexus-card px-3 py-1 text-[11px] uppercase tracking-label text-nexus-muted shadow-nexus-hairline backdrop-blur-sm"
             >
-              <Icon className="h-3 w-3 text-nexus-accent-light" />
+              <Icon className="h-3 w-3 text-nexus-subtle" />
               {f.text}
             </motion.span>
           );
@@ -892,36 +902,38 @@ function WelcomeScreen({ onSuggestion }) {
               }}
               whileHover={{ y: -4, scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
-              className="group relative overflow-hidden rounded-2xl p-[1px]
-                         bg-gradient-to-br from-white/10 to-white/[0.02]
-                         transition-all duration-300
-                         hover:from-nexus-accent/60 hover:to-cyan-400/30"
+              className="group relative overflow-hidden rounded-2xl border border-nexus-border
+                         bg-nexus-card shadow-nexus-e1
+                         transition-colors duration-panel ease-nexus
+                         hover:border-nexus-accent-rim hover:bg-nexus-elevated
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent
+                         focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg"
             >
               <div
                 className={`relative flex h-full items-start gap-3 rounded-2xl
-                            bg-nexus-card/80 p-4 backdrop-blur-xl
-                            shadow-lg shadow-black/20 transition-shadow duration-300 ${s.glow}`}
+                            p-4 transition-shadow duration-panel ease-nexus ${s.glow}`}
               >
                 {/* Shine sweep on hover */}
-                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent transition-transform duration-700 group-hover:translate-x-full" />
 
                 {/* Icon tile */}
                 <div
                   className={`flex h-9 w-9 flex-shrink-0 items-center justify-center
-                              rounded-xl bg-gradient-to-br ${s.accent}
-                              shadow-md transition-transform duration-300 group-hover:scale-110`}
+                              rounded-xl ${s.accent} shadow-nexus-hairline
+                              transition-colors duration-panel ease-nexus
+                              group-hover:border-nexus-accent-rim`}
                 >
-                  <Icon className="h-4 w-4 text-white" />
+                  <Icon className="h-4 w-4 text-nexus-muted transition-colors duration-panel ease-nexus group-hover:text-nexus-accent-light" />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-nexus-accent-light">
+                    <span className="text-[11px] font-medium uppercase tracking-label text-nexus-muted">
                       {s.label}
                     </span>
-                    <ArrowUpRight className="h-3 w-3 text-nexus-muted transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-cyan-300" />
+                    <ArrowUpRight className="h-3 w-3 text-nexus-subtle transition-all duration-panel ease-nexus group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-nexus-accent-light" />
                   </div>
-                  <p className="mt-1 text-sm leading-snug text-nexus-text/90">
+                  <p className="mt-1 text-sm leading-relaxed text-nexus-text">
                     {s.prompt}
                   </p>
                 </div>
@@ -931,7 +943,7 @@ function WelcomeScreen({ onSuggestion }) {
         })}
       </div>
 
-      <p className="mt-7 text-[11px] text-nexus-muted/60">
+      <p className="mt-7 text-[11px] text-nexus-subtle">
         Pick one to begin, or just start typing below ↓
       </p>
     </motion.div>
