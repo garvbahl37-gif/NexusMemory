@@ -16,6 +16,17 @@
 
 ---
 
+## Screenshots
+
+| | |
+| --- | --- |
+| ![Welcome](screenshots/01-welcome.png) | ![Chat with citations](screenshots/02-chat.png) |
+| **Welcome** — suggestion cards and ambient backdrop | **Chat** — streaming replies, tables, highlighted code, memory/source chips |
+| ![Memory Store](screenshots/03-memory-store.png) | ![Boot sequence](screenshots/04-boot-sequence.png) |
+| **Memory Store** — searchable, editable, category-filtered | **Boot sequence** — cinematic startup |
+
+---
+
 ## What is Nexus Memory?
 
 Nexus Memory is a full-stack AI assistant focused on **long-term memory**. Unlike a generic chatbot it:
@@ -30,20 +41,20 @@ Nexus Memory is a full-stack AI assistant focused on **long-term memory**. Unlik
 
 ## Features
 
-### 🧠 Persistent memory (the core)
+### Persistent memory (the core)
 - **Cross-session recall** — memories are scoped per user (`client_id`) and recalled in every chat
 - **LLM extraction** — facts are extracted with category + confidence, then **de-duplicated** on write
 - **Provenance** — each memory shows the message it came from
 - **Editable memory panel** — inline edit, search, and category filters
 - Backed by **Postgres** (facts) + **pgvector** (semantic search)
 
-### 📄 Document chat (RAG)
+### Document chat (RAG)
 - Upload **PDF, DOCX, CSV, TXT, MD**
 - Chunking → embeddings (`all-MiniLM-L6-v2`) → pgvector
 - **Inline citations** — see exactly which source/page answered
 - MMR retrieval (with similarity fallback)
 
-### 💬 Premium chat UX
+### Premium chat UX
 - **Streaming** replies with a natural **typewriter** reveal
 - **Stop / Regenerate / Edit-and-resend**
 - **Syntax-highlighted code blocks** with copy buttons
@@ -51,12 +62,16 @@ Nexus Memory is a full-stack AI assistant focused on **long-term memory**. Unlik
 - **Search conversations**, **export to Markdown**
 - **Conversation summarization** keeps long chats coherent
 
-### 🎙️ Voice & settings
+### Voice & settings
 - **Voice input** (speech-to-text) and **read-aloud** replies (TTS) + auto-speak
 - **Settings**: temperature, **persona presets** (Concise / Mentor / Creative) + custom system prompt
 
-### 🎨 Design
-- Cinematic boot sequence, floating rounded panels, aurora backdrops, glass message bubbles — tuned to stay **smooth** (GPU-composited, no scroll jank)
+### Design — "Graphite & Champagne"
+- A neutral graphite base (`#0B0B0C` → `#212125`) with a single champagne-gold accent (`#C9A227`)
+- Gold is treated as **jewelry, not fabric** — it is reserved for the primary action, focus rings and active states, so the interface separates by tone rather than hue
+- Surfaces are raised by an **inset top hairline** (light-on-edge) rather than drop shadows, on a three-step elevation ladder
+- **WCAG AA** across the board: body text is checked against every surface it sits on, and near-black ink (never white) is used on gold fills
+- Cinematic boot sequence, floating rounded panels, ambient backdrops — tuned to stay **smooth** (GPU-composited, no scroll jank)
 
 ---
 
@@ -106,8 +121,8 @@ When `DATABASE_URL` is **not** set, the backend falls back to local **SQLite + C
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `GROQ_API_KEY` | ✅ | Free key from [console.groq.com](https://console.groq.com) |
-| `DATABASE_URL` | ⛅ recommended | Supabase Postgres **session-pooler** URI. Unset → local SQLite. |
+| `GROQ_API_KEY` | Required | Free key from [console.groq.com](https://console.groq.com) |
+| `DATABASE_URL` | Recommended | Supabase Postgres **session-pooler** URI. Unset → local SQLite. |
 | `GROQ_MODEL` | optional | Defaults to `llama-3.3-70b-versatile` |
 | `CORS_ORIGINS` | optional | Comma-separated allowed origins (defaults to `*`) |
 
@@ -166,5 +181,5 @@ All requests carry an `X-Client-Id` header that scopes data per browser/user.
 MIT — see [LICENSE](LICENSE).
 
 <div align="center">
-Built with ❤️ — fast, memory-driven AI.
+Fast, memory-driven AI.
 </div>
