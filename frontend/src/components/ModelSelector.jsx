@@ -124,18 +124,18 @@ export default function ModelSelector({ value, onChange }) {
         {isOpen && (
           <motion.div
             id="model-selector-portal"
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
             style={dropdownStyle}
-            className="bg-nexus-card border border-nexus-border
-                       rounded-xl shadow-2xl shadow-black/60
+            className="bg-nexus-elevated border border-nexus-border
+                       rounded-xl shadow-nexus-e3
                        overflow-hidden"
           >
             {/* Header */}
             <div className="px-3 py-2 border-b border-nexus-border">
-              <p className="text-xs text-nexus-muted font-medium tracking-wide">
+              <p className="text-[11px] uppercase tracking-label font-medium text-nexus-muted">
                 Available Models
               </p>
             </div>
@@ -151,11 +151,15 @@ export default function ModelSelector({ value, onChange }) {
                   }}
                   className={`w-full flex items-center justify-between
                              gap-2 px-2.5 py-2 rounded-lg text-left
-                             text-xs transition-colors
+                             text-xs transition-colors duration-micro ease-nexus
+                             focus:outline-none focus-visible:ring-2
+                             focus-visible:ring-nexus-accent
+                             focus-visible:ring-offset-2
+                             focus-visible:ring-offset-nexus-elevated
                              ${
                                value === model
-                                 ? "bg-nexus-accent/10 text-nexus-accent-light"
-                                 : "text-nexus-text hover:bg-nexus-surface"
+                                 ? "bg-nexus-accent-soft text-nexus-accent-light"
+                                 : "text-nexus-text hover:bg-nexus-hairline"
                              }`}
                 >
                   <span className="truncate">{pretty(model)}</span>
@@ -168,7 +172,9 @@ export default function ModelSelector({ value, onChange }) {
 
             {/* Footer */}
             <div className="px-3 py-2 border-t border-nexus-border">
-              <p className="text-xs text-nexus-muted">⚡ Powered by Groq</p>
+              <p className="text-[11px] text-nexus-subtle">
+                ⚡ Powered by Groq
+              </p>
             </div>
           </motion.div>
         )}
@@ -182,21 +188,26 @@ export default function ModelSelector({ value, onChange }) {
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="group flex items-center gap-1.5 px-2.5 py-1.5
-                   rounded-xl bg-nexus-card/80 border border-nexus-border/70
-                   text-xs text-nexus-text hover:border-nexus-accent/50
-                   hover:bg-nexus-card backdrop-blur-sm
-                   transition-all duration-200 whitespace-nowrap
-                   shadow-sm relative z-10"
+        className={`group flex items-center gap-1.5 px-2.5 py-1.5
+                   rounded-xl bg-nexus-card border border-nexus-border
+                   text-xs text-nexus-text shadow-nexus-e1
+                   hover:bg-nexus-elevated hover:border-nexus-accent-rim
+                   active:scale-[0.98]
+                   transition-all duration-micro ease-nexus whitespace-nowrap
+                   focus:outline-none focus-visible:ring-2
+                   focus-visible:ring-nexus-accent focus-visible:ring-offset-2
+                   focus-visible:ring-offset-nexus-bg
+                   relative z-10
+                   ${isOpen ? "border-nexus-accent-rim bg-nexus-elevated" : ""}`}
       >
-        <span className="flex h-4 w-4 items-center justify-center rounded-md bg-gradient-to-br from-nexus-accent to-purple-600 flex-shrink-0">
-          <Cpu className="w-2.5 h-2.5 text-white" />
+        <span className="flex h-4 w-4 items-center justify-center rounded-md bg-nexus-elevated ring-1 ring-nexus-accent-rim flex-shrink-0">
+          <Cpu className="w-2.5 h-2.5 text-nexus-accent" />
         </span>
         <span className="font-medium max-w-[96px] truncate">
           {selectedLabel}
         </span>
         <ChevronDown
-          className={`w-3 h-3 flex-shrink-0 text-nexus-muted transition-transform duration-200
+          className={`w-3 h-3 flex-shrink-0 text-nexus-subtle transition-transform duration-micro ease-nexus
                       ${isOpen ? "rotate-180" : ""}`}
         />
       </button>

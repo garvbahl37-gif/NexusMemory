@@ -46,16 +46,18 @@ function humanSize(bytes) {
 function FileItem({ file, onRemove }) {
   const statusIcons = {
     uploading: (
-      <Loader2 className="w-3.5 h-3.5 text-nexus-accent animate-spin" />
+      <Loader2 className="w-3.5 h-3.5 text-nexus-muted animate-spin" />
     ),
-    processing: <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />,
+    processing: (
+      <Loader2 className="w-3.5 h-3.5 text-nexus-warning animate-spin" />
+    ),
     success: <CheckCircle className="w-3.5 h-3.5 text-nexus-success" />,
     error: <AlertCircle className="w-3.5 h-3.5 text-nexus-error" />,
   };
 
   const statusColors = {
-    uploading: "text-nexus-accent",
-    processing: "text-amber-400",
+    uploading: "text-nexus-muted",
+    processing: "text-nexus-warning",
     success: "text-nexus-success",
     error: "text-nexus-error",
   };
@@ -72,17 +74,17 @@ function FileItem({ file, onRemove }) {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
-      className="group flex items-center gap-3 rounded-xl border border-nexus-border/70
-                 bg-nexus-card/80 px-3 py-2.5 backdrop-blur-sm transition-colors
-                 hover:border-nexus-accent/30"
+      className="group flex items-center gap-3 rounded-xl border border-nexus-border
+                 bg-nexus-card px-3 py-2.5 shadow-nexus-e1 transition-all
+                 duration-micro ease-nexus hover:bg-nexus-elevated hover:shadow-nexus-e2"
     >
       {/* File icon tile */}
       <div
         className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg
-                   bg-gradient-to-br from-nexus-accent/25 to-purple-500/10
-                   ring-1 ring-inset ring-nexus-accent/20"
+                   bg-nexus-elevated shadow-nexus-hairline
+                   ring-1 ring-inset ring-nexus-border"
       >
-        <FileText className="h-[18px] w-[18px] text-nexus-accent-light" />
+        <FileText className="h-[18px] w-[18px] text-nexus-muted" />
       </div>
 
       {/* File info */}
@@ -95,8 +97,8 @@ function FileItem({ file, onRemove }) {
           </span>
           {file.size > 0 && (
             <>
-              <span className="text-nexus-muted/40">·</span>
-              <span className="text-[11px] text-nexus-muted">
+              <span className="text-nexus-subtle">·</span>
+              <span className="text-[11px] text-nexus-subtle">
                 {humanSize(file.size)}
               </span>
             </>
@@ -107,7 +109,7 @@ function FileItem({ file, onRemove }) {
         {file.status === "uploading" && (
           <div className="mt-1.5 h-1 bg-nexus-border rounded-full overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-nexus-accent to-purple-500"
+              className="h-full rounded-full bg-nexus-accent"
               initial={{ width: 0 }}
               animate={{ width: `${file.progress || 0}%` }}
               transition={{ duration: 0.3 }}
@@ -124,8 +126,11 @@ function FileItem({ file, onRemove }) {
             href={documentDownloadUrl(file.documentId)}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg p-1.5 text-nexus-muted transition-colors
-                       hover:bg-nexus-surface hover:text-nexus-accent-light"
+            className="rounded-lg p-1.5 text-nexus-subtle outline-none transition-all
+                       duration-micro ease-nexus hover:bg-nexus-surface hover:text-nexus-text
+                       focus-visible:ring-2 focus-visible:ring-nexus-accent
+                       focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg
+                       active:scale-[0.98]"
             title="Download file"
           >
             <Download className="h-3.5 w-3.5" />
@@ -136,8 +141,11 @@ function FileItem({ file, onRemove }) {
         {(file.status === "success" || file.status === "error") && (
           <button
             onClick={() => onRemove(file)}
-            className="rounded-lg p-1.5 text-nexus-muted transition-colors
-                       hover:bg-nexus-error/10 hover:text-nexus-error"
+            className="rounded-lg p-1.5 text-nexus-subtle outline-none transition-all
+                       duration-micro ease-nexus hover:bg-nexus-error/10 hover:text-nexus-error
+                       focus-visible:ring-2 focus-visible:ring-nexus-accent
+                       focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg
+                       active:scale-[0.98]"
             title="Remove file"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -243,12 +251,14 @@ export default function UploadSection({ sessionId, onUploadComplete }) {
       <div
         {...getRootProps()}
         className={`group flex cursor-pointer flex-col items-center justify-center
-                     rounded-xl border border-dashed px-5 py-4 text-center
-                     transition-all duration-200
+                     rounded-xl border border-dashed px-5 py-4 text-center outline-none
+                     transition-all duration-panel ease-nexus
+                     focus-visible:ring-2 focus-visible:ring-nexus-accent
+                     focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-bg
                      ${
                        isDragActive
-                         ? "border-nexus-accent bg-nexus-accent/5"
-                         : "border-nexus-border hover:border-nexus-accent/50 hover:bg-nexus-card/40"
+                         ? "border-nexus-accent-rim bg-nexus-accent-soft shadow-nexus-glow"
+                         : "border-nexus-border hover:border-nexus-accent-rim hover:bg-nexus-accent-soft"
                      }`}
       >
         <input {...getInputProps()} />
@@ -259,19 +269,20 @@ export default function UploadSection({ sessionId, onUploadComplete }) {
           className="flex flex-col items-center"
         >
           <div
-            className={`mb-2 flex h-10 w-10 items-center justify-center rounded-xl transition-colors
+            className={`mb-2 flex h-10 w-10 items-center justify-center rounded-xl
+                        border shadow-nexus-hairline transition-colors duration-micro ease-nexus
                         ${
                           isDragActive
-                            ? "bg-nexus-accent/20 text-nexus-accent-light"
-                            : "bg-nexus-surface text-nexus-muted group-hover:text-nexus-accent-light"
+                            ? "border-nexus-accent-rim bg-nexus-elevated text-nexus-accent-light"
+                            : "border-nexus-border bg-nexus-elevated text-nexus-muted group-hover:text-nexus-text"
                         }`}
           >
             <Upload className="h-5 w-5" />
           </div>
-          <p className="text-xs font-medium text-nexus-text">
+          <p className="text-xs font-semibold tracking-tight text-nexus-text">
             {isDragActive ? "Drop files here" : "Upload Documents"}
           </p>
-          <p className="mt-0.5 text-[11px] text-nexus-muted">
+          <p className="mt-1 text-[11px] font-medium uppercase tracking-label text-nexus-muted">
             PDF, DOCX, CSV, TXT, MD — up to 50MB
           </p>
         </motion.div>

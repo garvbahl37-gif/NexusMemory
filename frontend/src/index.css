@@ -34,7 +34,7 @@
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-nexus-muted;
+    @apply bg-nexus-subtle;
   }
 }
 
@@ -49,8 +49,15 @@
            disabled:cursor-not-allowed;
   }
 
+  /* Gold fill — ink text is the ONLY legal foreground here. Never white. */
   .nexus-button-primary {
-    @apply nexus-button bg-nexus-accent text-white hover:bg-nexus-accent-light;
+    @apply nexus-button bg-nexus-accent text-nexus-accent-ink
+           hover:bg-nexus-accent-light active:bg-nexus-accent-dark;
+  }
+
+  /* Editorial micro-label: sidebar section headers, "MEMORY STORE", tabs, chips */
+  .nexus-label {
+    @apply text-[11px] font-medium uppercase tracking-label text-nexus-muted;
   }
 
   .nexus-button-ghost {
@@ -72,7 +79,7 @@
   .prose-nexus h1,
   .prose-nexus h2,
   .prose-nexus h3 {
-    @apply font-semibold text-white mt-4 mb-2;
+    @apply font-semibold tracking-tight text-nexus-text mt-4 mb-2;
   }
 
   .prose-nexus h1 {
@@ -91,7 +98,7 @@
 
   .prose-nexus code {
     @apply bg-nexus-surface border border-nexus-border rounded
-           px-1.5 py-0.5 font-mono text-sm text-purple-300;
+           px-1.5 py-0.5 font-mono text-sm text-nexus-accent-light;
   }
 
   .prose-nexus pre {
@@ -99,8 +106,9 @@
            p-4 overflow-x-auto my-3;
   }
 
+  /* Warm-neutral code base text — no off-spec hues */
   .prose-nexus pre code {
-    @apply bg-transparent border-none p-0 text-green-300;
+    @apply bg-transparent border-none p-0 text-[#D8D5D0];
   }
 
   .prose-nexus ul,
@@ -128,7 +136,7 @@
   }
 
   .prose-nexus strong {
-    @apply font-semibold text-white;
+    @apply font-semibold text-nexus-text;
   }
 
   .prose-nexus table {
@@ -175,24 +183,27 @@
   }
 }
 
+/* Champagne sweep — gold into warm graphite */
 .gradient-text {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+  background: linear-gradient(135deg, #e3c766, #c9a227 55%, #8a878d);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .nexus-glow {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 24px rgba(201, 162, 39, 0.12);
 }
 
 /* ── Cinematic loader effects ─────────────────────────────────────── */
 
 /* Perspective grid floor that scrolls toward the viewer */
+/* Gold ruling crossed with a faint white counter-rule — a precision
+   instrument booting, not a synthwave demo. */
 .cine-grid {
   background-image:
-    linear-gradient(rgba(99, 102, 241, 0.25) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.18) 1px, transparent 1px);
+    linear-gradient(rgba(201, 162, 39, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 44px 44px;
   transform: perspective(420px) rotateX(68deg);
   transform-origin: bottom center;

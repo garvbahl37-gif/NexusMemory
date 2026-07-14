@@ -57,29 +57,32 @@ export default function SettingsModal({ open, onClose, onChange }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
         >
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/[0.72] backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ type: "spring", stiffness: 280, damping: 26 }}
-            className="relative z-10 w-full max-w-md rounded-2xl border border-nexus-border bg-nexus-surface shadow-2xl shadow-black/50"
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
+            className="relative z-10 w-full max-w-md rounded-2xl border border-nexus-border bg-nexus-elevated shadow-nexus-e3"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-nexus-border px-5 py-4">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-nexus-accent" />
-                <span className="text-sm font-semibold text-nexus-text">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-6 w-6 items-center justify-center rounded-md border border-nexus-accent-rim bg-nexus-card shadow-nexus-hairline">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-nexus-accent" />
+                </span>
+                <span className="text-sm font-semibold tracking-tight text-nexus-text">
                   Settings
                 </span>
               </div>
               <button
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-nexus-muted hover:bg-nexus-card hover:text-nexus-text"
+                className="rounded-lg p-1.5 text-nexus-muted transition-colors duration-micro ease-nexus hover:bg-nexus-card hover:text-nexus-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-elevated"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -89,7 +92,7 @@ export default function SettingsModal({ open, onClose, onChange }) {
               {/* Temperature */}
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <label className="text-xs font-medium text-nexus-text">
+                  <label className="nexus-label text-[11px] font-medium uppercase tracking-label text-nexus-muted">
                     Creativity (temperature)
                   </label>
                   <span className="font-mono text-xs text-nexus-accent-light">
@@ -105,9 +108,9 @@ export default function SettingsModal({ open, onClose, onChange }) {
                   onChange={(e) =>
                     update({ temperature: parseFloat(e.target.value) })
                   }
-                  className="w-full accent-nexus-accent"
+                  className="w-full cursor-pointer accent-nexus-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-elevated"
                 />
-                <div className="mt-1 flex justify-between text-[10px] text-nexus-muted">
+                <div className="mt-1.5 flex justify-between text-[10px] uppercase tracking-label text-nexus-subtle">
                   <span>Precise</span>
                   <span>Balanced</span>
                   <span>Creative</span>
@@ -116,8 +119,8 @@ export default function SettingsModal({ open, onClose, onChange }) {
 
               {/* Persona */}
               <div>
-                <label className="mb-2 flex items-center gap-1.5 text-xs font-medium text-nexus-text">
-                  <Sparkles className="h-3.5 w-3.5 text-nexus-accent-light" />
+                <label className="nexus-label mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-label text-nexus-muted">
+                  <Sparkles className="h-3.5 w-3.5 text-nexus-subtle" />
                   Persona
                 </label>
                 <div className="mb-2 flex flex-wrap gap-1.5">
@@ -125,10 +128,10 @@ export default function SettingsModal({ open, onClose, onChange }) {
                     <button
                       key={p.name}
                       onClick={() => update({ systemPrompt: p.prompt })}
-                      className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${
+                      className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors duration-micro ease-nexus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-elevated ${
                         settings.systemPrompt === p.prompt
-                          ? "border-nexus-accent/50 bg-nexus-accent/10 text-nexus-accent-light"
-                          : "border-nexus-border/70 text-nexus-muted hover:text-nexus-text"
+                          ? "border-nexus-accent-rim bg-nexus-accent-soft text-nexus-accent-light"
+                          : "border-nexus-border bg-nexus-card text-nexus-muted hover:bg-nexus-elevated hover:text-nexus-text"
                       }`}
                     >
                       {p.name}
@@ -140,25 +143,29 @@ export default function SettingsModal({ open, onClose, onChange }) {
                   onChange={(e) => update({ systemPrompt: e.target.value })}
                   placeholder="Custom system instructions (optional)…"
                   rows={3}
-                  className="nexus-input w-full resize-none text-xs"
+                  className="nexus-input w-full resize-none rounded-xl border-nexus-border bg-nexus-card text-xs leading-relaxed shadow-nexus-e1 transition-all duration-micro ease-nexus focus:border-nexus-accent-rim"
                 />
               </div>
 
               {/* Auto-speak */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-1.5 text-xs font-medium text-nexus-text">
-                  <Volume2 className="h-3.5 w-3.5 text-nexus-accent-light" />
+                <label className="nexus-label flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-label text-nexus-muted">
+                  <Volume2 className="h-3.5 w-3.5 text-nexus-subtle" />
                   Auto-speak replies
                 </label>
                 <button
                   onClick={() => update({ autoSpeak: !settings.autoSpeak })}
-                  className={`relative h-5 w-9 rounded-full transition-colors ${
-                    settings.autoSpeak ? "bg-nexus-accent" : "bg-nexus-border"
+                  className={`relative h-5 w-9 rounded-full border transition-colors duration-micro ease-nexus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nexus-accent focus-visible:ring-offset-2 focus-visible:ring-offset-nexus-elevated ${
+                    settings.autoSpeak
+                      ? "border-nexus-accent-dark bg-nexus-accent"
+                      : "border-nexus-border bg-nexus-card"
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
-                      settings.autoSpeak ? "left-[18px]" : "left-0.5"
+                    className={`absolute top-0.5 h-3.5 w-3.5 rounded-full transition-all duration-micro ease-nexus ${
+                      settings.autoSpeak
+                        ? "left-[19px] bg-nexus-accent-ink"
+                        : "left-0.5 bg-nexus-subtle"
                     }`}
                   />
                 </button>
