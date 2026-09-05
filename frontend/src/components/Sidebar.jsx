@@ -16,6 +16,7 @@ import { format } from "date-fns";
 
 export default function Sidebar({
   currentSessionId,
+  version,
   onNewChat,
   onSelectSession,
   onClose,
@@ -31,7 +32,7 @@ export default function Sidebar({
 
   useEffect(() => {
     loadSessions();
-  }, [currentSessionId]);
+  }, [currentSessionId, version]);
 
   useEffect(() => {
     checkHealth()

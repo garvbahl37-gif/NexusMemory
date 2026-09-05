@@ -35,6 +35,7 @@ export default function ChatWindow({
   sessionId,
   onNewSession,
   onSidebarToggle,
+  onConversationSaved,
 }) {
   const [input, setInput] = useState("");
   // Left empty until ModelSelector reports what the backend actually uses.
@@ -154,6 +155,8 @@ export default function ChatWindow({
     }
 
     await sendMessage(message, selectedModel, activeSessionId);
+    // The session row and its title only exist once the reply is stored.
+    onConversationSaved?.();
     setTimeout(() => loadMemories(), 2500);
   };
 

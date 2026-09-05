@@ -7,6 +7,8 @@ import CinematicLoader from "./components/CinematicLoader";
 
 export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState(null);
+  // Bumped once a reply is stored, so the sidebar picks up the new title.
+  const [sessionsVersion, setSessionsVersion] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [booting, setBooting] = useState(true);
 
@@ -24,7 +26,6 @@ export default function App() {
 
   const handleNewSessionCreated = useCallback(() => {
     const newId = uuidv4();
-    console.log("App: creating new session:", newId);
     setCurrentSessionId(newId);
     return newId;
   }, []);
@@ -54,6 +55,7 @@ export default function App() {
               <div className="w-[260px] h-full">
                 <Sidebar
                   currentSessionId={currentSessionId}
+                  version={sessionsVersion}
                   onNewChat={handleNewChat}
                   onSelectSession={handleSelectSession}
                 />
@@ -87,6 +89,7 @@ export default function App() {
               >
                 <Sidebar
                   currentSessionId={currentSessionId}
+                  version={sessionsVersion}
                   onNewChat={handleNewChat}
                   onSelectSession={handleSelectSession}
                   onClose={() => setSidebarOpen(false)}
@@ -104,6 +107,7 @@ export default function App() {
           sessionId={currentSessionId}
           onNewSession={handleNewSessionCreated}
           onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+          onConversationSaved={() => setSessionsVersion((v) => v + 1)}
         />
       </div>
     </div>
