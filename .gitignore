@@ -102,3 +102,5 @@ htmlcov/
 *.tmp
 *.temp
 .cache/
+# Vercel CLI (project linkage + a local OIDC token)
+.vercel

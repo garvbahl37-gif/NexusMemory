@@ -1,14 +1,14 @@
 # Nexus Memory
 
-> A premium AI assistant that **remembers you across sessions**, answers questions from **your documents**, and replies in an instant — powered by **Groq**, with durable **Supabase** storage.
+> A premium AI assistant that **remembers you across sessions**, answers questions from **your documents**, and replies in an instant — running end to end on **Vercel**, with durable **Supabase** storage.
 
 <div align="center">
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
-[![Groq](https://img.shields.io/badge/Groq-LPU_Inference-F55036?style=flat-square)](https://groq.com)
-[![LangChain](https://img.shields.io/badge/LangChain-0.2-1C3C3C?style=flat-square&logo=langchain&logoColor=white)](https://langchain.com)
+[![Ollama Cloud](https://img.shields.io/badge/Ollama_Cloud-hosted_models-000000?style=flat-square&logo=ollama&logoColor=white)](https://ollama.com)
+[![Vercel](https://img.shields.io/badge/Vercel-frontend_%2B_API-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres_+_pgvector-3FCF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
@@ -33,8 +33,9 @@ Nexus Memory is a full-stack AI assistant focused on **long-term memory**. Unlik
 
 - **Remembers facts about you** across every conversation (semantic memory, scoped per user)
 - **Reads your documents** (PDF, DOCX, CSV, TXT, MD) and answers with **inline citations** (RAG)
-- **Streams replies in ~1s** via Groq's LPU inference (Llama 3.3 70B)
+- **Streams replies** from hosted models on **Ollama Cloud** (or Groq, if you set a key) — switchable from the model picker
 - **Persists everything** in Supabase (Postgres + pgvector) — survives restarts & works across devices
+- **Never sleeps** — the API is a Vercel function beside the frontend, not a container that idles out
 - Ships with a **premium, cinematic UI** — voice I/O, code highlighting, personas, and more
 
 ---
@@ -50,7 +51,7 @@ Nexus Memory is a full-stack AI assistant focused on **long-term memory**. Unlik
 
 ### Document chat (RAG)
 - Upload **PDF, DOCX, CSV, TXT, MD**
-- Chunking → embeddings (`all-MiniLM-L6-v2`) → pgvector
+- Chunking → embeddings (`gte-small`, 384-dim) → pgvector
 - **Inline citations** — see exactly which source/page answered
 - MMR retrieval (with similarity fallback)
 
@@ -79,24 +80,29 @@ Nexus Memory is a full-stack AI assistant focused on **long-term memory**. Unlik
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│                  FRONTEND  (React + Vite + Tailwind)          │
-│   ChatWindow · MemoryPanel · Sidebar · Settings · Voice       │
-└───────────────────────────┬──────────────────────────────────┘
-                            │  HTTP / SSE  (X-Client-Id)
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│                   BACKEND  (FastAPI + LangChain)              │
-│   /chat (SSE)   /upload   /memory   /health                   │
+│  ONE VERCEL DEPLOYMENT                                        │
 │                                                               │
-│   ┌──────────────┐   ┌───────────────┐   ┌────────────────┐   │
-│   │ Groq LLM     │   │ Local CPU      │   │  Supabase      │   │
-│   │ Llama 3.3 70B│   │ embeddings     │   │  Postgres +    │   │
-│   │ (streaming)  │   │ (MiniLM-L6)    │   │  pgvector      │   │
-│   └──────────────┘   └───────────────┘   └────────────────┘   │
-└──────────────────────────────────────────────────────────────┘
+│  /            static build  (React + Vite + Tailwind)         │
+│  /api/*       Python function (FastAPI, SSE streaming)        │
+│               ChatWindow · MemoryPanel · Sidebar · Settings    │
+└───────────────────────────┬──────────────────────────────────┘
+                            │  same origin, no CORS hop
+                            ▼
+     ┌──────────────┐  ┌──────────────────┐  ┌────────────────┐
+     │ Ollama Cloud │  │ Supabase Edge Fn │  │  Supabase      │
+     │ or Groq      │  │ gte-small        │  │  Postgres +    │
+     │ (chat, SSE)  │  │ (embeddings)     │  │  pgvector      │
+     └──────────────┘  └──────────────────┘  └────────────────┘
 ```
 
-When `DATABASE_URL` is **not** set, the backend falls back to local **SQLite + ChromaDB** for zero-config local dev.
+The API runs where the frontend does, so there is no separate backend host to
+wake up. Embeddings are an HTTP call rather than an in-process model: torch and
+sentence-transformers are ~1 GB against Vercel's 250 MB function limit, so the
+model lives in a Supabase Edge Function instead. Both it and the old in-process
+MiniLM emit 384-dimensional vectors, so the pgvector schema is the same either
+way.
+
+When `DATABASE_URL` is **not** set, the backend falls back to local **SQLite**, scoring vectors in Python — zero-config local dev with no vector engine to install.
 
 ---
 
@@ -108,12 +114,13 @@ When `DATABASE_URL` is **not** set, the backend falls back to local **SQLite + C
 | Animation          | Framer Motion                       |
 | Markdown / code    | react-markdown + rehype-highlight   |
 | Backend            | FastAPI (async, SSE streaming)      |
-| LLM                | Groq — `llama-3.3-70b-versatile`    |
-| AI framework       | LangChain                           |
-| Embeddings         | sentence-transformers `all-MiniLM-L6-v2` |
+| Chat               | Ollama Cloud (`gemma4:31b` default) or Groq |
+| AI framework       | langchain-core (+ provider adapters) |
+| Embeddings         | Supabase Edge Function — `gte-small` (384-dim) |
 | Database           | Supabase **Postgres** (SQLite fallback) |
-| Vector store       | **pgvector** (ChromaDB fallback)    |
-| Docs               | PyPDF · python-docx · CSV           |
+| Vector store       | **pgvector**, queried directly       |
+| Hosting            | Vercel — static frontend + Python function |
+| Docs               | pypdf · python-docx · CSV           |
 
 ---
 
@@ -121,12 +128,27 @@ When `DATABASE_URL` is **not** set, the backend falls back to local **SQLite + C
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `GROQ_API_KEY` | Required | Free key from [console.groq.com](https://console.groq.com) |
-| `DATABASE_URL` | Recommended | Supabase Postgres **session-pooler** URI. Unset → local SQLite. |
-| `GROQ_MODEL` | optional | Defaults to `llama-3.3-70b-versatile` |
+| `OLLAMA_API_KEY` | one of these | Key from [ollama.com/settings/keys](https://ollama.com/settings/keys) |
+| `GROQ_API_KEY` | one of these | Free key from [console.groq.com](https://console.groq.com) |
+| `DATABASE_URL` | Recommended | Supabase **transaction-pooler** URI. Unset → local SQLite. |
+| `SUPABASE_URL` | for embeddings | `https://<ref>.supabase.co` |
+| `SUPABASE_ANON_KEY` | for embeddings | Used only to call the `embed` function, which reads no data |
+| `EMBEDDING_PROVIDER` | optional | `auto` (default), `supabase`, `openai`, or `local` |
+| `SUPABASE_SERVICE_KEY` | optional | Enables Supabase Storage for raw uploads |
+| `OLLAMA_CLOUD_MODEL` | optional | Defaults to `gemma4:31b` |
 | `CORS_ORIGINS` | optional | Comma-separated allowed origins (defaults to `*`) |
+| `REDIS_URL` | optional | Response caching. Unset → every read hits Postgres. |
 
-> For Supabase: use the **Session pooler** connection string (IPv4), enable the `vector` extension, and URL-encode special characters in the password (`@` → `%40`).
+Both chat providers can be set at once — requests are routed by the model id
+the client asks for, so the model picker switches provider as a side effect.
+
+Set `EMBEDDING_PROVIDER=openai` with `EMBEDDINGS_BASE_URL`, `EMBEDDINGS_API_KEY`
+and `EMBEDDINGS_MODEL` to use any OpenAI-compatible `/v1/embeddings` endpoint
+instead; `local` runs sentence-transformers in-process (container only — see
+`requirements-local.txt`).
+
+> For Supabase: use the **transaction pooler** (port 6543, IPv4) and enable the
+> `vector` extension. The app creates its own `nexus_vectors` table on first run.
 
 ---
 
@@ -135,11 +157,16 @@ When `DATABASE_URL` is **not** set, the backend falls back to local **SQLite + C
 ### Backend
 ```bash
 python3 -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-export GROQ_API_KEY=your_key        # Windows: $env:GROQ_API_KEY="your_key"
+pip install -r requirements-local.txt
+export OLLAMA_API_KEY=your_key      # Windows: $env:OLLAMA_API_KEY="your_key"
 cd backend && uvicorn main:app --reload --port 8000
 ```
-No `DATABASE_URL` → uses local SQLite + ChromaDB automatically.
+No `DATABASE_URL` → local SQLite, with vectors scored in Python. Add
+`SUPABASE_URL` + `SUPABASE_ANON_KEY` to use the hosted embedder, or leave them
+unset and `requirements-local.txt` will run MiniLM on the CPU.
+
+`requirements.txt` is the slim, serverless-safe set; `requirements-local.txt`
+adds the in-process extras.
 
 ### Frontend
 ```bash
@@ -151,14 +178,27 @@ Set `VITE_API_URL` in `frontend/.env` to point at a deployed backend (defaults t
 
 ---
 
-## Deploy (Hugging Face Space + Supabase)
+## Deploy (Vercel + Supabase)
 
-The backend ships as a **Docker Space**:
-1. Create a **Docker** Space and push this repo (the `Dockerfile` + `start.sh` run FastAPI on port 7860).
-2. Add Space secrets: **`GROQ_API_KEY`**, **`DATABASE_URL`** (Supabase session-pooler URI).
-3. Deploy the **frontend** (Vite static build) to Vercel/Netlify with `VITE_API_URL` = your Space URL.
+Frontend and API ship as **one Vercel project** — `vercel.json` builds the Vite
+app to `frontend/dist` and mounts FastAPI at `/api` via `api/index.py`.
 
-See `HF_DEPLOY.md` for the step-by-step.
+1. **Embeddings.** Deploy an Edge Function named `embed` to your Supabase
+   project that returns `{ "embeddings": number[][] }` for a `{ "input": string[] }`
+   body, using `new Supabase.ai.Session("gte-small")`.
+2. **Database.** Enable the `vector` extension. The app creates its own tables.
+3. **Environment.** Set `OLLAMA_API_KEY`, `DATABASE_URL`, `SUPABASE_URL` and
+   `SUPABASE_ANON_KEY` on the Vercel project (all three environments).
+4. **Ship.** `vercel deploy --prod`.
+
+`VITE_API_URL` is `/api` in production — same origin, so there is no CORS hop
+and no second host to keep awake.
+
+> Vercel pins Python 3.14 for functions and ignores `.python-version` and
+> `Pipfile`, so every pin in `requirements.txt` must have a cp314 wheel.
+
+A `Dockerfile` and `start.sh` are still included for running the whole thing as
+one container (Fly.io, Railway, a Docker Space) with embeddings in-process.
 
 ---
 
@@ -170,7 +210,9 @@ See `HF_DEPLOY.md` for the step-by-step.
 | GET | `/chat/sessions` | List this client's sessions |
 | POST | `/upload` | Upload + index a document |
 | GET/POST/PUT/DELETE | `/memory…` | Manage memories (client-scoped) |
-| GET | `/health` | API + LLM status |
+| GET | `/models` | Model catalogue, tagged by provider and reachability |
+| GET | `/health` | API, chat provider, embeddings and cache status |
+| GET | `/health/deep` | The above, but it actually round-trips the DB and embedder |
 
 All requests carry an `X-Client-Id` header that scopes data per browser/user.
 
@@ -181,5 +223,5 @@ All requests carry an `X-Client-Id` header that scopes data per browser/user.
 MIT — see [LICENSE](LICENSE).
 
 <div align="center">
-Fast, memory-driven AI.
+Memory-driven AI, always awake.
 </div>
