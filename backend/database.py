@@ -37,14 +37,16 @@ IS_SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNC
 PG_CONNECT_ARGS = {"options": "-c search_path=public,extensions"}
 
 if IS_POSTGRES and IS_SERVERLESS:
-    # Many short-lived instances: hold nothing open, let Supabase's pooler do
-    # the pooling. Keeping a per-instance pool here exhausts connections fast.
-    from sqlalchemy.pool import NullPool
-
+    # A serverless instance handles requests one at a time and is reused, so a
+    # tiny pool is right: it keeps the TLS handshake out of the request path
+    # without holding many connections open per instance. Supabase's
+    # transaction pooler multiplexes the rest.
     engine = create_engine(
         _db_url,
-        poolclass=NullPool,
+        pool_size=1,
+        max_overflow=2,
         pool_pre_ping=True,
+        pool_recycle=280,
         connect_args=PG_CONNECT_ARGS,
     )
 elif IS_POSTGRES:
@@ -141,6 +143,22 @@ def _run_light_migrations():
 
 
 def init_db():
+    """Create the schema, skipping the work entirely once it exists.
+
+    create_all() reflects every table and the migrations ALTER four of them.
+    That is a dozen round trips, and it ran on every cold start to discover
+    there was nothing to do.
+    """
+    if IS_POSTGRES:
+        try:
+            with engine.connect() as conn:
+                if conn.execute(
+                    text("SELECT to_regclass('public.chat_sessions')")
+                ).scalar():
+                    return
+        except Exception as e:
+            logger.warning(f"Schema check failed, creating anyway: {e}")
+
     Base.metadata.create_all(bind=engine)
     _run_light_migrations()
 

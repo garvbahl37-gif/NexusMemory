@@ -86,12 +86,23 @@ async def chat(
     # The session list + this session's messages changed.
     cache_del(f"msgs:{session_id}", f"sessions:{x_client_id}")
 
+    # Memory recall and every document collection search the same question, so
+    # embed it once here rather than once per search.
+    try:
+        from services.embeddings_provider import get_embeddings
+
+        query_vector = get_embeddings().embed_query(request.message)
+    except Exception as e:
+        logger.warning(f"Could not embed the question: {e}")
+        query_vector = None
+
     # Retrieve relevant memories (cross-session, scoped to this client)
     memories = retrieve_relevant_memories(
         query=request.message,
         session_id=session_id,
         client_id=x_client_id,
         k=settings.MAX_MEMORY_CONTEXT,
+        query_vector=query_vector,
     )
 
     memory_context = ""
@@ -117,6 +128,7 @@ async def chat(
                 query=request.message,
                 collection_name=doc.collection_name,
                 k=2,
+                query_vector=query_vector,
             )
             all_chunks.extend(chunks)
 
@@ -163,26 +175,16 @@ async def chat(
     if request.system_prompt and request.system_prompt.strip():
         system_message = request.system_prompt.strip() + "\n\n" + system_message
 
-    # Summarize older turns so long conversations stay coherent (only the last
-    # 6 messages are sent verbatim; everything before is condensed).
+    # Older turns are carried as trimmed excerpts rather than an LLM-written
+    # summary. Summarising meant a full, blocking model call before the first
+    # token of the actual answer could be sent — a second reply's worth of
+    # waiting on every turn of a long conversation.
     older = conversation_history[:-6] if len(conversation_history) > 6 else []
-    if len(older) >= 4:
-        try:
-            summ_llm = get_llm(temperature=0.3)
-            convo_text = "\n".join(
-                f"{m['role']}: {m['content']}" for m in older
-            )
-            summary = summ_llm.invoke(
-                "Summarize the key points, decisions, and facts from this "
-                "earlier conversation in 3-5 short bullet points:\n\n"
-                + convo_text
-            )
-            if summary and str(summary).strip():
-                system_message += (
-                    "\n\n### Summary of earlier conversation:\n" + str(summary).strip()
-                )
-        except Exception as e:
-            logger.warning(f"History summarization failed: {e}")
+    if older:
+        earlier = "\n".join(
+            f"{m['role']}: {m['content'][:200]}" for m in older[-12:]
+        )
+        system_message += "\n\n### Earlier in this conversation:\n" + earlier
 
     # Build LangChain messages. Escape literal braces in dynamic content
     # (memories, document chunks, history) so ChatPromptTemplate doesn't

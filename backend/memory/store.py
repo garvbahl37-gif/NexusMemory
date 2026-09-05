@@ -88,6 +88,7 @@ def retrieve_relevant_memories(
     session_id: str = None,
     client_id: str = None,
     k: int = None,
+    query_vector: list[float] = None,
 ) -> list[str]:
     """Facts relevant to a query, scoped to one client where known.
 
@@ -98,11 +99,16 @@ def retrieve_relevant_memories(
 
     try:
         if client_id:
-            hits = search(MEMORY_COLLECTION, query, k=k, client_id=client_id)
+            hits = search(
+                MEMORY_COLLECTION, query, k=k, client_id=client_id,
+                query_vector=query_vector,
+            )
         else:
             hits = [
                 h
-                for h in search(MEMORY_COLLECTION, query, k=k * 3)
+                for h in search(
+                    MEMORY_COLLECTION, query, k=k * 3, query_vector=query_vector
+                )
                 if h.metadata.get("session_id") == session_id
             ][:k]
 

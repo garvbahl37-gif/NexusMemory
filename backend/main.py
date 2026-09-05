@@ -8,7 +8,12 @@ import logging
 from config import settings
 from database import init_db
 from routes import chat, upload, memory
-from services.llm import check_llm_health, list_available_models, default_model
+from services.llm import (
+    check_llm_health,
+    default_model,
+    list_available_models,
+    resolve_provider,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,17 +42,15 @@ def ensure_schema():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Kept deliberately cheap: this runs on every cold start, ahead of the
+    # request that triggered it. Probing the chat provider here cost a network
+    # round trip for a log line, and /health answers the same question on
+    # demand, so it is not done.
     logger.info(f"Starting {settings.APP_NAME} {settings.APP_VERSION}")
-    ensure_schema()
+    provider, model = resolve_provider(None)
+    logger.info(f"Chat will route to {provider} ({model})")
 
-    health = await check_llm_health()
-    if health["status"] == "healthy":
-        logger.info(
-            f"Chat ready via {health['provider']} ({health.get('current_model')})"
-        )
-    else:
-        logger.warning(f"No chat provider reachable: {health.get('error')}")
-        logger.warning("Set OLLAMA_API_KEY or GROQ_API_KEY, or run: ollama serve")
+    ensure_schema()
 
     yield
 

@@ -13,6 +13,7 @@ def retrieve_relevant_chunks(
     query: str,
     collection_name: str,
     k: int = None,
+    query_vector: list[float] = None,
 ) -> list[Document]:
     """Most relevant chunks for a query.
 
@@ -22,7 +23,9 @@ def retrieve_relevant_chunks(
     k = k or settings.RETRIEVAL_K
 
     try:
-        hits = search(collection_name, query, k=k, use_mmr=True)
+        hits = search(
+            collection_name, query, k=k, use_mmr=True, query_vector=query_vector
+        )
         logger.info(f"Retrieved {len(hits)} chunks for '{query[:50]}'")
         return [
             Document(page_content=h.content, metadata=h.metadata) for h in hits

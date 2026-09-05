@@ -67,6 +67,19 @@ def ensure_schema() -> None:
         return
 
     if IS_POSTGRES:
+        # The table almost always exists already, and the DDL below costs five
+        # round trips. One cheap lookup settles both questions: whether to run
+        # it at all, and which schema pgvector lives in.
+        with engine.connect() as conn:
+            _vector_type = _resolve_vector_type(conn)
+            exists = conn.execute(
+                text(f"SELECT to_regclass('public.{TABLE}')")
+            ).scalar()
+
+        if exists:
+            _schema_ready = True
+            return
+
         # A least-privilege application role cannot CREATE EXTENSION, and on a
         # managed Postgres pgvector is usually installed already — so try, and
         # let _resolve_vector_type be the thing that decides if it is there.
@@ -75,9 +88,6 @@ def ensure_schema() -> None:
                 conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         except Exception as e:
             logger.info(f"Skipping CREATE EXTENSION vector: {e}")
-
-        with engine.begin() as conn:
-            _vector_type = _resolve_vector_type(conn)
             conn.execute(
                 text(
                     f"""
@@ -240,11 +250,18 @@ def search(
     client_id: str | None = None,
     use_mmr: bool = False,
     lambda_mult: float = 0.7,
+    query_vector: list[float] | None = None,
 ) -> list[Hit]:
-    """Nearest chunks in `collection`, optionally scoped to one client."""
+    """Nearest chunks in `collection`, optionally scoped to one client.
+
+    Pass `query_vector` when the caller has already embedded the query — a
+    chat turn searches memory and every document collection with the same
+    question, and each embedding is a network round trip.
+    """
     ensure_schema()
 
-    query_vector = get_embeddings().embed_query(query)
+    if query_vector is None:
+        query_vector = get_embeddings().embed_query(query)
     # MMR needs a wider net to have anything to diversify between.
     fetch_k = k * 3 if use_mmr else k
 
