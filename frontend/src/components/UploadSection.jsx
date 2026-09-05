@@ -28,7 +28,9 @@ const ACCEPTED_TYPES = {
   ],
 };
 
-const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+// Vercel caps a serverless request body at 4.5 MB, so anything larger is
+// rejected before it reaches the API. Fail here, with a reason.
+const MAX_SIZE = 4 * 1024 * 1024; // 4MB
 
 // Humanize a byte count → "1.2 MB", "340 KB", etc.
 function humanSize(bytes) {
@@ -283,7 +285,7 @@ export default function UploadSection({ sessionId, onUploadComplete }) {
             {isDragActive ? "Drop files here" : "Upload Documents"}
           </p>
           <p className="mt-1 text-[11px] font-medium uppercase tracking-label text-nexus-muted">
-            PDF, DOCX, CSV, TXT, MD — up to 50MB
+            PDF, DOCX, CSV, TXT, MD — up to 4MB
           </p>
         </motion.div>
       </div>

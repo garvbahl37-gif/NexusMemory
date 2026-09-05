@@ -22,7 +22,12 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".csv"}
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+# Vercel rejects a serverless request body over 4.5 MB before it reaches
+# the app, so anything larger can never arrive however high this is set.
+MAX_FILE_SIZE = 4 * 1024 * 1024  # 4MB
+
+# What fits in the request budget — see the check in upload() below.
+MAX_CHUNKS = 240
 
 
 @router.post("/upload")
@@ -54,7 +59,7 @@ async def upload_document(
             if len(content) > MAX_FILE_SIZE:
                 raise HTTPException(
                     status_code=413,
-                    detail="File too large. Maximum size is 50MB.",
+                    detail="That file is over 4 MB. Split it, or upload a smaller export.",
                 )
 
             await f.write(content)
@@ -80,7 +85,20 @@ async def upload_document(
         if not chunks:
             raise HTTPException(
                 status_code=422,
-                detail="Document chunking produced no results.",
+                detail="No text could be extracted from that document.",
+            )
+
+        # Embedding runs at roughly 6 passages/second against the edge
+        # function, and the whole request has to finish inside Vercel's 60s
+        # ceiling. Refusing here beats timing out halfway through.
+        if len(chunks) > MAX_CHUNKS:
+            raise HTTPException(
+                status_code=413,
+                detail=(
+                    f"That document is {len(chunks)} passages long and Nexus "
+                    f"indexes up to {MAX_CHUNKS} in one upload. Split it into "
+                    "smaller files and upload them separately."
+                ),
             )
 
         # Create collection name

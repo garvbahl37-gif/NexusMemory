@@ -21,9 +21,13 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-# Edge functions and inference APIs both rate-limit on payload size, so long
-# document uploads are embedded in batches rather than one request per chunk.
-BATCH_SIZE = 24
+# Supabase's edge worker has a hard ceiling on how much gte-small inference
+# fits in one invocation. Measured against the live function with ~1 kB chunks:
+# a batch of 4 succeeds, a batch of 6 returns WORKER_RESOURCE_LIMIT even when
+# sent alone. Three invocations in flight is fine and roughly triples
+# throughput; six trips the same limit from the other direction.
+BATCH_SIZE = 4
+CONCURRENCY = 3
 TIMEOUT = 60.0
 RETRIES = 3
 
@@ -37,14 +41,36 @@ class _HTTPEmbeddings(Embeddings):
         raise NotImplementedError
 
     def _embed_all(self, texts: list[str]) -> list[list[float]]:
-        vectors: list[list[float]] = []
-        for i in range(0, len(texts), BATCH_SIZE):
-            batch = [t if t and t.strip() else " " for t in texts[i : i + BATCH_SIZE]]
-            vectors.extend(self._with_retries(batch))
-        return vectors
+        batches = [
+            [t if t and t.strip() else " " for t in texts[i : i + BATCH_SIZE]]
+            for i in range(0, len(texts), BATCH_SIZE)
+        ]
+        if len(batches) == 1:
+            return self._with_retries(batches[0])
+
+        # Order matters — vectors must line up with the chunks they came from —
+        # so results are collected by index rather than as they arrive.
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
+            results = list(pool.map(self._with_retries, batches))
+
+        return [vector for batch in results for vector in batch]
 
     def _with_retries(self, batch: list[str]) -> list[list[float]]:
+        """Embed one batch, halving it if the provider says it was too much.
+
+        How much fits in a single call depends on tokens, not on how many
+        chunks or characters we sent: a page of dense or non-prose text
+        tokenises into several times more work than the same length of
+        ordinary writing, and the edge worker answers WORKER_RESOURCE_LIMIT.
+        Rather than pick a batch size that is safe for the worst input and slow
+        for every other one, back off on the failure itself — splitting until
+        the work fits, and only giving up when a single chunk cannot be
+        embedded on its own.
+        """
         last: Exception | None = None
+
         for attempt in range(RETRIES):
             try:
                 out = self._embed_batch(batch)
@@ -53,14 +79,25 @@ class _HTTPEmbeddings(Embeddings):
                         f"{self.name} returned {len(out)} vectors for {len(batch)} inputs"
                     )
                 return out
-            except Exception as e:  # noqa: BLE001 — retried, then re-raised
+            except Exception as e:  # noqa: BLE001 — split, retried, then re-raised
                 last = e
-                # A cold edge function can take a few seconds to boot; back off
-                # rather than failing the whole chat turn on the first miss.
+
+                if len(batch) > 1:
+                    middle = len(batch) // 2
+                    logger.info(
+                        f"{self.name} refused {len(batch)} inputs; splitting"
+                    )
+                    return self._with_retries(batch[:middle]) + self._with_retries(
+                        batch[middle:]
+                    )
+
+                # A single chunk: a cold worker takes a few seconds to boot and
+                # a busy one sheds load, so this is worth waiting out.
                 if attempt < RETRIES - 1:
                     import time
 
                     time.sleep(0.6 * (attempt + 1))
+
         logger.error(f"{self.name} embeddings failed after {RETRIES} attempts: {last}")
         raise last
 
