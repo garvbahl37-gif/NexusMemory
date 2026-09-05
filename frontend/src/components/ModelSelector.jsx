@@ -2,24 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Cpu, ChevronDown, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
-
-const FALLBACK_MODELS = [
-  "llama-3.3-70b-versatile",
-  "llama-3.1-8b-instant",
-  "gemma2-9b-it",
-];
-
-// Friendly display names for known models.
-const PRETTY = {
-  "llama-3.3-70b-versatile": "Llama 3.3 70B",
-  "llama-3.1-8b-instant": "Llama 3.1 8B",
-  "gemma2-9b-it": "Gemma 2 9B",
-};
-const pretty = (m) => PRETTY[m] || m;
+import { getModels } from "../services/api";
 
 export default function ModelSelector({ value, onChange }) {
-  const [models, setModels] = useState(FALLBACK_MODELS);
+  // [{ id, label, provider, available }] — the backend routes by model id, so
+  // picking here also picks the provider.
+  const [models, setModels] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({});
   const buttonRef = useRef(null);
@@ -105,17 +93,20 @@ export default function ModelSelector({ value, onChange }) {
 
   const fetchModels = async () => {
     try {
-      const { data } = await axios.get("http://localhost:11434/api/tags", {
-        timeout: 3000,
-      });
-      const names = data.models?.map((m) => m.name) || [];
-      if (names.length > 0) setModels(names);
+      const { models: list, default: fallback } = await getModels();
+      setModels(list || []);
+      // Adopt whatever the backend would use anyway, so the label never
+      // claims a model the request will not actually go to.
+      if (!value && fallback) onChange(fallback);
     } catch {
-      // Silent fallback
+      // Leave the list empty; the backend still answers with its default.
     }
   };
 
-  const selectedLabel = pretty(value || "llama-3.3-70b-versatile");
+  const reachable = models.filter((m) => m.available);
+  const gated = models.filter((m) => !m.available);
+  const selectedLabel =
+    models.find((m) => m.id === value)?.label || value || "Loading…";
 
   // The dropdown rendered via portal at body level
   const DropdownPortal = () =>
@@ -142,11 +133,11 @@ export default function ModelSelector({ value, onChange }) {
 
             {/* Model list */}
             <div className="p-1 max-h-52 overflow-y-auto">
-              {models.map((model) => (
+              {reachable.map((model) => (
                 <button
-                  key={model}
+                  key={model.id}
                   onClick={() => {
-                    onChange(model);
+                    onChange(model.id);
                     setIsOpen(false);
                   }}
                   className={`w-full flex items-center justify-between
@@ -157,24 +148,39 @@ export default function ModelSelector({ value, onChange }) {
                              focus-visible:ring-offset-2
                              focus-visible:ring-offset-nexus-elevated
                              ${
-                               value === model
+                               value === model.id
                                  ? "bg-nexus-accent-soft text-nexus-accent-light"
                                  : "text-nexus-text hover:bg-nexus-hairline"
                              }`}
                 >
-                  <span className="truncate">{pretty(model)}</span>
-                  {value === model && (
+                  <span className="truncate">{model.label}</span>
+                  {value === model.id ? (
                     <Check className="w-3 h-3 text-nexus-accent flex-shrink-0" />
+                  ) : (
+                    <span className="text-[10px] uppercase tracking-label text-nexus-subtle flex-shrink-0">
+                      {model.provider}
+                    </span>
                   )}
                 </button>
               ))}
-            </div>
 
-            {/* Footer */}
-            <div className="px-3 py-2 border-t border-nexus-border">
-              <p className="text-[11px] text-nexus-subtle">
-                ⚡ Powered by Groq
-              </p>
+              {/* Listed but unreachable on the current key — shown so the
+                  catalogue is honest, not offered so the request cannot fail. */}
+              {gated.length > 0 && (
+                <>
+                  <p className="mt-2 px-2.5 pb-1 pt-2 text-[11px] uppercase tracking-label font-medium text-nexus-subtle border-t border-nexus-border">
+                    Needs a paid Ollama plan
+                  </p>
+                  {gated.map((model) => (
+                    <p
+                      key={model.id}
+                      className="px-2.5 py-1 text-xs text-nexus-subtle truncate"
+                    >
+                      {model.label}
+                    </p>
+                  ))}
+                </>
+              )}
             </div>
           </motion.div>
         )}

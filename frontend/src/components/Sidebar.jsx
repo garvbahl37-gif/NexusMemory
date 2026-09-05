@@ -11,7 +11,7 @@ import {
   Tag,
   Search,
 } from "lucide-react";
-import { getSessions, deleteSession, getMemories } from "../services/api";
+import { getSessions, deleteSession, getMemories, checkHealth } from "../services/api";
 import { format } from "date-fns";
 
 export default function Sidebar({
@@ -27,10 +27,17 @@ export default function Sidebar({
   const [memories, setMemories] = useState([]);
   const [memoryCount, setMemoryCount] = useState(0);
   const [loadingMemories, setLoadingMemories] = useState(false);
+  const [status, setStatus] = useState(null);
 
   useEffect(() => {
     loadSessions();
   }, [currentSessionId]);
+
+  useEffect(() => {
+    checkHealth()
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, []);
 
   useEffect(() => {
     if (currentSessionId && activeTab === "memory") {
@@ -360,7 +367,14 @@ export default function Sidebar({
             <span className="relative inline-flex h-2 w-2 rounded-full bg-nexus-success" />
           </span>
           <span className="text-[11px] uppercase tracking-label font-medium text-nexus-muted">
-            Online · <span className="text-nexus-text">Groq Llama 3.3</span>
+            {status?.llm?.status === "healthy" ? (
+              <>
+                {status.llm.provider} ·{" "}
+                <span className="text-nexus-text">{status.llm.current_model}</span>
+              </>
+            ) : (
+              "Connecting…"
+            )}
           </span>
         </div>
       </div>

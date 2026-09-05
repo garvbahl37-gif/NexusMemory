@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// Backend URL. In production set VITE_API_URL (e.g. the Hugging Face Space URL);
-// falls back to the local dev server.
+// Backend URL. In production this is "/api" — the API is a Vercel function on
+// the same deployment as this frontend, so there is no cross-origin hop.
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // Stable per-browser client id so each visitor only sees their OWN chats.
@@ -223,7 +223,16 @@ export async function deleteMemory(memoryId) {
 // ─── System API ───────────────────────────────────────────────────────────────
 
 /**
- * Check system health (Ollama + API).
+ * Models the backend can route to. Each is tagged with the provider that will
+ * serve it, and with whether the configured key can actually reach it.
+ */
+export async function getModels() {
+  const { data } = await api.get("/models");
+  return data;
+}
+
+/**
+ * Check system health.
  */
 export async function checkHealth() {
   try {

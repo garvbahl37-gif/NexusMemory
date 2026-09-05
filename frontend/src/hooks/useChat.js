@@ -107,7 +107,7 @@ export function useChat(sessionId) {
         const response = await sendChatMessage({
           message: content.trim(),
           session_id: activeSessionId,
-          model: model || "llama3",
+          model,
           stream: true,
           signal: controllerRef.current.signal,
         });

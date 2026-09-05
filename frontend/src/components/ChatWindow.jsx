@@ -28,7 +28,7 @@ import MemoryPanel from "./MemoryPanel";
 import ModelSelector from "./ModelSelector";
 import SettingsModal, { loadSettings } from "./SettingsModal";
 import { useChat } from "../hooks/useChat";
-import { getSessionMessages, getMemories } from "../services/api";
+import { getSessionMessages, getMemories, checkHealth } from "../services/api";
 import { createRecognizer, speechSupported, speak } from "../utils/voice";
 
 export default function ChatWindow({
@@ -37,13 +37,15 @@ export default function ChatWindow({
   onSidebarToggle,
 }) {
   const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState("llama-3.3-70b-versatile");
+  // Left empty until ModelSelector reports what the backend actually uses.
+  const [selectedModel, setSelectedModel] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [memories, setMemories] = useState([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [status, setStatus] = useState(null);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -77,6 +79,13 @@ export default function ChatWindow({
       setMessages([]);
     }
   }, [sessionId]);
+
+  // Which provider is actually answering, for the status line.
+  useEffect(() => {
+    checkHealth()
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, []);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -309,7 +318,7 @@ export default function ChatWindow({
               reachable) when content is taller than the viewport. */}
           <div className="relative z-10 flex-1 overflow-y-auto">
             <div className="min-h-full flex flex-col items-center justify-center px-6 py-10">
-              <WelcomeScreen onSuggestion={handleSuggestion} />
+              <WelcomeScreen onSuggestion={handleSuggestion} status={status} />
             </div>
           </div>
         </div>
@@ -763,7 +772,7 @@ function WelcomeAmbient() {
   );
 }
 
-function WelcomeScreen({ onSuggestion }) {
+function WelcomeScreen({ onSuggestion, status }) {
   const suggestions = [
     {
       icon: Sparkles,
@@ -851,7 +860,9 @@ function WelcomeScreen({ onSuggestion }) {
           <span className="relative inline-flex h-2 w-2 rounded-full bg-nexus-success" />
         </span>
         <span className="text-[11px] font-medium uppercase tracking-label text-nexus-muted">
-          Online · Groq Llama 3.3
+          {status?.llm?.status === "healthy"
+            ? `${status.llm.provider} · ${status.llm.current_model}`
+            : "Connecting…"}
         </span>
       </motion.div>
 
