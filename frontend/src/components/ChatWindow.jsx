@@ -36,10 +36,10 @@ export default function ChatWindow({
   onNewSession,
   onSidebarToggle,
   onConversationSaved,
+  model,
+  onModelChange,
 }) {
   const [input, setInput] = useState("");
-  // Left empty until ModelSelector reports what the backend actually uses.
-  const [selectedModel, setSelectedModel] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [memories, setMemories] = useState([]);
@@ -154,7 +154,7 @@ export default function ChatWindow({
       activeSessionId = onNewSession();
     }
 
-    await sendMessage(message, selectedModel, activeSessionId);
+    await sendMessage(message, model, activeSessionId);
     // The session row and its title only exist once the reply is stored.
     onConversationSaved?.();
     setTimeout(() => loadMemories(), 2500);
@@ -244,7 +244,7 @@ export default function ChatWindow({
       while (copy.length && copy[copy.length - 1].role === "assistant") copy.pop();
       return copy;
     });
-    sendMessage(lastUser.content, selectedModel, sessionId, {
+    sendMessage(lastUser.content, model, sessionId, {
       skipUserMessage: true,
     });
   };
@@ -260,7 +260,7 @@ export default function ChatWindow({
         { ...prev[idx], content: newContent.trim() },
       ];
     });
-    sendMessage(newContent.trim(), selectedModel, sessionId, {
+    sendMessage(newContent.trim(), model, sessionId, {
       skipUserMessage: true,
     });
   };
@@ -305,8 +305,8 @@ export default function ChatWindow({
         />
         <TopBar
           onSidebarToggle={onSidebarToggle}
-          selectedModel={selectedModel}
-          setSelectedModel={setSelectedModel}
+          model={model}
+          onModelChange={onModelChange}
           showMemory={showMemory}
           setShowMemory={setShowMemory}
           memoryCount={memories.length}
@@ -321,7 +321,11 @@ export default function ChatWindow({
               reachable) when content is taller than the viewport. */}
           <div className="relative z-10 flex-1 overflow-y-auto">
             <div className="min-h-full flex flex-col items-center justify-center px-6 py-10">
-              <WelcomeScreen onSuggestion={handleSuggestion} status={status} />
+              <WelcomeScreen
+                onSuggestion={handleSuggestion}
+                status={status}
+                model={model}
+              />
             </div>
           </div>
         </div>
@@ -355,8 +359,8 @@ export default function ChatWindow({
         {/* Top Bar */}
         <TopBar
           onSidebarToggle={onSidebarToggle}
-          selectedModel={selectedModel}
-          setSelectedModel={setSelectedModel}
+          model={model}
+          onModelChange={onModelChange}
           showMemory={showMemory}
           setShowMemory={setShowMemory}
           memoryCount={memories.length}
@@ -510,8 +514,8 @@ export default function ChatWindow({
 
 function TopBar({
   onSidebarToggle,
-  selectedModel,
-  setSelectedModel,
+  model,
+  onModelChange,
   showMemory,
   setShowMemory,
   memoryCount,
@@ -613,7 +617,7 @@ function TopBar({
         </button>
 
         {/* Model selector — always visible, dropdown-aware */}
-        <ModelSelector value={selectedModel} onChange={setSelectedModel} />
+        <ModelSelector value={model} onChange={onModelChange} />
       </div>
     </div>
   );
@@ -775,7 +779,7 @@ function WelcomeAmbient() {
   );
 }
 
-function WelcomeScreen({ onSuggestion, status }) {
+function WelcomeScreen({ onSuggestion, status, model }) {
   const suggestions = [
     {
       icon: Sparkles,
@@ -864,7 +868,7 @@ function WelcomeScreen({ onSuggestion, status }) {
         </span>
         <span className="text-[11px] font-medium uppercase tracking-label text-nexus-muted">
           {status?.llm?.status === "healthy"
-            ? `${status.llm.provider} · ${status.llm.current_model}`
+            ? `${status.llm.provider} · ${model || status.llm.current_model}`
             : "Connecting…"}
         </span>
       </motion.div>

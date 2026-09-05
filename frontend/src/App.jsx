@@ -1,6 +1,10 @@
 import { useState, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
+
+// The chosen model is shared by the picker, the composer and both status
+// lines, so it lives here rather than inside the chat window.
+const MODEL_KEY = "nexus_model";
 import Sidebar from "./components/Sidebar";
 import ChatWindow from "./components/ChatWindow";
 import CinematicLoader from "./components/CinematicLoader";
@@ -11,6 +15,18 @@ export default function App() {
   const [sessionsVersion, setSessionsVersion] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [booting, setBooting] = useState(true);
+  const [model, setModelState] = useState(
+    () => localStorage.getItem(MODEL_KEY) || "",
+  );
+
+  const setModel = useCallback((next) => {
+    setModelState(next);
+    try {
+      localStorage.setItem(MODEL_KEY, next);
+    } catch {
+      // A blocked localStorage only costs the choice on the next reload.
+    }
+  }, []);
 
   const handleNewChat = useCallback(() => {
     setCurrentSessionId(null);
@@ -56,6 +72,7 @@ export default function App() {
                 <Sidebar
                   currentSessionId={currentSessionId}
                   version={sessionsVersion}
+                  model={model}
                   onNewChat={handleNewChat}
                   onSelectSession={handleSelectSession}
                 />
@@ -90,6 +107,7 @@ export default function App() {
                 <Sidebar
                   currentSessionId={currentSessionId}
                   version={sessionsVersion}
+                  model={model}
                   onNewChat={handleNewChat}
                   onSelectSession={handleSelectSession}
                   onClose={() => setSidebarOpen(false)}
@@ -107,6 +125,8 @@ export default function App() {
           sessionId={currentSessionId}
           onNewSession={handleNewSessionCreated}
           onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+          model={model}
+          onModelChange={setModel}
           onConversationSaved={() => setSessionsVersion((v) => v + 1)}
         />
       </div>

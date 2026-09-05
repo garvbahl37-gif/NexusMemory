@@ -17,6 +17,7 @@ import { format } from "date-fns";
 export default function Sidebar({
   currentSessionId,
   version,
+  model,
   onNewChat,
   onSelectSession,
   onClose,
@@ -371,7 +372,11 @@ export default function Sidebar({
             {status?.llm?.status === "healthy" ? (
               <>
                 {status.llm.provider} ·{" "}
-                <span className="text-nexus-text">{status.llm.current_model}</span>
+                {/* The model the next message will actually go to, not the
+                    server default that /health happens to report. */}
+                <span className="text-nexus-text">
+                  {model || status.llm.current_model}
+                </span>
               </>
             ) : (
               "Connecting…"

@@ -6,7 +6,7 @@ from database import get_db, ChatSession, ChatMessage, UploadedDocument
 from memory.store import retrieve_relevant_memories, store_memory
 from memory.extractor import extract_memories_from_conversation
 from rag.retriever import retrieve_relevant_chunks, format_context_from_docs
-from services.llm import get_llm
+from services.llm import get_llm, resolve_provider
 from services.cache import cache_get, cache_set, cache_del
 from langchain_core.prompts import ChatPromptTemplate
 import uuid
@@ -211,9 +211,13 @@ async def chat(
 
             try:
                 # Send metadata first
+                provider, resolved_model = resolve_provider(model_name)
                 metadata = json.dumps({
                     "type": "metadata",
                     "session_id": session_id,
+                    # What actually answered, resolved server-side.
+                    "model": resolved_model,
+                    "provider": provider,
                     "memories_used": len(memories),
                     # The facts themselves, so the client can show which
                     # entries in the record this answer drew on.

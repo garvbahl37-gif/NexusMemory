@@ -11,6 +11,9 @@ export default function ModelSelector({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({});
   const buttonRef = useRef(null);
+  // Read inside an effect that runs once, so it sees the current choice.
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   useEffect(() => {
     fetchModels();
@@ -95,9 +98,9 @@ export default function ModelSelector({ value, onChange }) {
     try {
       const { models: list, default: fallback } = await getModels();
       setModels(list || []);
-      // Adopt whatever the backend would use anyway, so the label never
-      // claims a model the request will not actually go to.
-      if (!value && fallback) onChange(fallback);
+      // Only adopt the server default when the user has not chosen — a saved
+      // choice must survive the catalogue loading in after it.
+      if (!valueRef.current && fallback) onChange(fallback);
     } catch {
       // Leave the list empty; the backend still answers with its default.
     }

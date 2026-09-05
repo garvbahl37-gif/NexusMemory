@@ -237,7 +237,22 @@ whose link survives a page reload, and the same request works for `.docx`.
 
 ---
 
-## 7. Decisions needed before Phase 1
+## 7. Decisions — resolved 5 Sep 2026
+
+1. ~~**Which web search provider.**~~ **Tavily.** Key set on Vercel as
+   `TAVILY_API_KEY`, verified against the live API. The keyless DuckDuckGo
+   path stays as the fallback for quota exhaustion.
+
+2. ~~**Which model handles tool turns.**~~ **`gpt-oss:120b`**, and it is now the
+   default for ordinary chat too. The reasoning preamble turned out to cost
+   almost nothing once measured properly against production: 1.12s to first
+   visible token, against 1.01s for `gemma4:31b`. Set via `OLLAMA_CLOUD_MODEL`.
+
+3. **Still open — `SUPABASE_SERVICE_KEY`.** Needed before Phase 3 (authoring)
+   only; Phases 1 and 2 do not touch storage.
+
+<details>
+<summary>Original wording of the decisions</summary>
 
 1. **Which web search provider.** Tavily is built for LLM use and returns clean
    extracts (1,000 searches/month free). Brave gives 2,000/month free but raw
@@ -255,6 +270,8 @@ whose link survives a page reload, and the same request works for `.docx`.
    single tool calls well. `gpt-oss:120b` is stronger at multi-step reasoning
    but streams a reasoning preamble first, which delays the visible answer.
    *Recommendation: keep `gemma4:31b` as default, and let the picker choose.*
+
+</details>
 
 ---
 

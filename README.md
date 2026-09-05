@@ -33,7 +33,7 @@ Nexus Memory is a full-stack AI assistant focused on **long-term memory**. Unlik
 
 - **Remembers facts about you** across every conversation (semantic memory, scoped per user)
 - **Reads your documents** (PDF, DOCX, CSV, TXT, MD) and answers with **inline citations** (RAG)
-- **Streams replies** from hosted models on **Ollama Cloud** (or Groq, if you set a key) — switchable from the model picker
+- **Streams replies** from six hosted models on **Ollama Cloud** — GPT-OSS, Gemma 4 and Nemotron 3 — switchable mid-conversation from the model picker
 - **Persists everything** in Supabase (Postgres + pgvector) — survives restarts & works across devices
 - **Never sleeps** — the API is a Vercel function beside the frontend, not a container that idles out
 - Ships with a **premium, cinematic UI** — voice I/O, code highlighting, personas, and more
@@ -114,13 +114,52 @@ When `DATABASE_URL` is **not** set, the backend falls back to local **SQLite**, 
 | Animation          | Framer Motion                       |
 | Markdown / code    | react-markdown + rehype-highlight   |
 | Backend            | FastAPI (async, SSE streaming)      |
-| Chat               | Ollama Cloud (`gemma4:31b` default) or Groq |
+| Chat               | Ollama Cloud (`gpt-oss:120b` default) or Groq |
 | AI framework       | langchain-core (+ provider adapters) |
 | Embeddings         | Supabase Edge Function — `gte-small` (384-dim) |
 | Database           | Supabase **Postgres** (SQLite fallback) |
 | Vector store       | **pgvector**, queried directly       |
 | Hosting            | Vercel — static frontend + Python function |
 | Docs               | pypdf · python-docx · CSV           |
+
+---
+
+## Models
+
+Chat runs on **Ollama Cloud**. Requests are routed by model id, so switching in
+the picker switches provider too — Groq models appear in the same list when
+`GROQ_API_KEY` is set.
+
+These six are reachable on a **free** Ollama key, and all six return
+OpenAI-style `tool_calls`:
+
+| Model | id | Notes |
+| --- | --- | --- |
+| **GPT-OSS 120B** | `gpt-oss:120b` | **Default.** Strongest of the free set; streams a short reasoning preamble before the answer |
+| GPT-OSS 20B | `gpt-oss:20b` | Same family, smaller and cheaper to run |
+| Gemma 4 31B | `gemma4:31b` | No reasoning preamble — the most direct replies |
+| Nemotron 3 Nano | `nemotron-3-nano:30b` | Smallest; useful when you want terse output |
+| Nemotron 3 Super | `nemotron-3-super` | Longer reasoning, noticeably slower to first visible token |
+| Nemotron 3 Ultra | `nemotron-3-ultra` | Largest Nemotron |
+
+Measured against production (Singapore region, warm function, "what is a vector
+database?"):
+
+| Model | First visible token | Full reply |
+| --- | --- | --- |
+| `gemma4:31b` | 1.01 s | 1.89 s |
+| `gpt-oss:120b` | 1.12 s | 2.02 s |
+| `nemotron-3-super` | 4.32 s | 6.06 s |
+
+The rest of Ollama's catalogue — GLM, Kimi, MiniMax, DeepSeek, Qwen, Mistral
+Large — is still listed in the picker but greyed out, because a free key gets
+a subscription error from them. `GET /models` reports the whole catalogue with
+an `available` flag per model, so the UI never offers a model the request would
+fail on.
+
+Change the default with `OLLAMA_CLOUD_MODEL`. A per-browser choice is kept in
+`localStorage` and wins over the default; the reply's own metadata reports which
+model actually answered.
 
 ---
 
@@ -135,7 +174,7 @@ When `DATABASE_URL` is **not** set, the backend falls back to local **SQLite**, 
 | `SUPABASE_ANON_KEY` | for embeddings | Used only to call the `embed` function, which reads no data |
 | `EMBEDDING_PROVIDER` | optional | `auto` (default), `supabase`, `openai`, or `local` |
 | `SUPABASE_SERVICE_KEY` | optional | Enables Supabase Storage for raw uploads |
-| `OLLAMA_CLOUD_MODEL` | optional | Defaults to `gemma4:31b` |
+| `OLLAMA_CLOUD_MODEL` | optional | Default model. Currently `gpt-oss:120b` |
 | `CORS_ORIGINS` | optional | Comma-separated allowed origins (defaults to `*`) |
 | `REDIS_URL` | optional | Response caching. Unset → every read hits Postgres. |
 
