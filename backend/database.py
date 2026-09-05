@@ -1,7 +1,4 @@
 import os
-os.environ["ANONYMIZED_TELEMETRY"] = "false"
-os.environ["CHROMA_TELEMETRY"] = "false"
-os.environ["POSTHOG_DISABLED"] = "true"
 
 from sqlalchemy import (
     create_engine,
@@ -32,7 +29,25 @@ elif _db_url.startswith("postgresql://"):
 SQLALCHEMY_DATABASE_URL = _db_url
 IS_POSTGRES = _db_url.startswith("postgresql")
 
-if IS_POSTGRES:
+IS_SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+# Supabase installs pgvector into `extensions`, so the `<=>` distance operator
+# is invisible to a role whose search_path is just `public`. Postgres ignores
+# schemas in this list that do not exist, so it is safe elsewhere too.
+PG_CONNECT_ARGS = {"options": "-c search_path=public,extensions"}
+
+if IS_POSTGRES and IS_SERVERLESS:
+    # Many short-lived instances: hold nothing open, let Supabase's pooler do
+    # the pooling. Keeping a per-instance pool here exhausts connections fast.
+    from sqlalchemy.pool import NullPool
+
+    engine = create_engine(
+        _db_url,
+        poolclass=NullPool,
+        pool_pre_ping=True,
+        connect_args=PG_CONNECT_ARGS,
+    )
+elif IS_POSTGRES:
     # Poolers drop idle connections — pre_ping + recycle keeps them healthy.
     engine = create_engine(
         _db_url,
@@ -40,6 +55,7 @@ if IS_POSTGRES:
         pool_recycle=300,
         pool_size=5,
         max_overflow=2,
+        connect_args=PG_CONNECT_ARGS,
     )
 else:
     engine = create_engine(

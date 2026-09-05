@@ -1,14 +1,17 @@
-import os
-os.environ["ANONYMIZED_TELEMETRY"] = "false"
-os.environ["CHROMA_TELEMETRY"]     = "false"
+"""Long-term memory.
 
-from sqlalchemy.orm import Session
-from langchain.schema import Document
-from database import MemoryEntry
-from services.vectorstore import get_vectorstore
-from config import settings
+Facts are stored twice: as rows in `memory_entries` (what the memory panel
+lists and edits) and as vectors (what recall searches). The two are kept in
+step by `embedding_id`.
+"""
 import logging
 import uuid
+
+from sqlalchemy.orm import Session
+
+from config import settings
+from database import MemoryEntry
+from services.vectorstore import add_texts, delete_ids, search
 
 logger = logging.getLogger(__name__)
 
@@ -18,24 +21,14 @@ MEMORY_COLLECTION = "nexus_long_term_memory"
 DEDUP_THRESHOLD = 0.92
 
 
-def get_memory_vectorstore():
-    """Get or create the memory vector store (pgvector or Chroma)."""
-    return get_vectorstore(MEMORY_COLLECTION)
-
-
 def _is_duplicate(fact: str, client_id: str) -> bool:
-    """True if a near-identical fact already exists for this client."""
+    """True when a near-identical fact is already on file for this client."""
     if not client_id:
         return False
     try:
-        vectorstore = get_memory_vectorstore()
-        results = vectorstore.similarity_search_with_relevance_scores(
-            query=fact,
-            k=1,
-            filter={"client_id": client_id},
-        )
-        if results and results[0][1] >= DEDUP_THRESHOLD:
-            logger.info(f"Skipping duplicate memory: {fact[:50]}...")
+        hits = search(MEMORY_COLLECTION, fact, k=1, client_id=client_id)
+        if hits and hits[0].score >= DEDUP_THRESHOLD:
+            logger.info(f"Skipping duplicate memory: {fact[:50]}")
             return True
     except Exception as e:
         logger.warning(f"Dedup check failed: {e}")
@@ -52,7 +45,7 @@ def store_memory(
     client_id: str = None,
     dedup: bool = True,
 ) -> MemoryEntry:
-    """Store a memory fact in both SQLite and ChromaDB (deduplicated)."""
+    """Record a fact as a row and as a vector."""
     if dedup and _is_duplicate(fact, client_id):
         return None
 
@@ -71,24 +64,22 @@ def store_memory(
     db.commit()
     db.refresh(entry)
 
-    vectorstore = get_memory_vectorstore()
-    vectorstore.add_documents(
-        documents=[
-            Document(
-                page_content=fact,
-                metadata={
-                    "session_id": session_id,
-                    "client_id": client_id or "",
-                    "category": category,
-                    "memory_id": str(entry.id),
-                    "confidence": confidence,
-                },
-            )
+    add_texts(
+        collection=MEMORY_COLLECTION,
+        texts=[fact],
+        metadatas=[
+            {
+                "session_id": session_id,
+                "category": category,
+                "memory_id": str(entry.id),
+                "confidence": confidence,
+            }
         ],
         ids=[embedding_id],
+        client_id=client_id,
     )
 
-    logger.info(f"Stored memory [{category}]: {fact[:60]}...")
+    logger.info(f"Stored memory [{category}]: {fact[:60]}")
     return entry
 
 
@@ -98,29 +89,28 @@ def retrieve_relevant_memories(
     client_id: str = None,
     k: int = None,
 ) -> list[str]:
-    """Retrieve semantically relevant memories, scoped to the client when given."""
+    """Facts relevant to a query, scoped to one client where known.
+
+    Client scope is what makes recall work across sessions; session scope is
+    the fallback for a request that arrives without a client id.
+    """
     k = k or settings.MEMORY_RETRIEVAL_K
 
     try:
-        vectorstore = get_memory_vectorstore()
+        if client_id:
+            hits = search(MEMORY_COLLECTION, query, k=k, client_id=client_id)
+        else:
+            hits = [
+                h
+                for h in search(MEMORY_COLLECTION, query, k=k * 3)
+                if h.metadata.get("session_id") == session_id
+            ][:k]
 
-        # Prefer cross-session client scope; fall back to session scope.
-        flt = {"client_id": client_id} if client_id else {"session_id": session_id}
-
-        results = vectorstore.similarity_search_with_relevance_scores(
-            query=query,
-            k=k,
-            filter=flt,
-        )
-
-        relevant = [doc.page_content for doc, score in results if score > 0.3]
-        logger.info(
-            f"Retrieved {len(relevant)} relevant memories for: '{query[:40]}'"
-        )
+        relevant = [h.content for h in hits if h.score > 0.3]
+        logger.info(f"Recalled {len(relevant)} memories for '{query[:40]}'")
         return relevant
-
     except Exception as e:
-        logger.error(f"Memory retrieval failed: {e}")
+        logger.error(f"Memory recall failed: {e}")
         return []
 
 
@@ -178,25 +168,22 @@ def update_memory(
     db.commit()
     db.refresh(entry)
 
-    # Re-embed if the text changed.
+    # Re-embed only when the text itself changed.
     if fact_changed and entry.embedding_id:
         try:
-            vectorstore = get_memory_vectorstore()
-            vectorstore.delete(ids=[entry.embedding_id])
-            vectorstore.add_documents(
-                documents=[
-                    Document(
-                        page_content=entry.fact,
-                        metadata={
-                            "session_id": entry.session_id,
-                            "client_id": entry.client_id or "",
-                            "category": entry.category,
-                            "memory_id": str(entry.id),
-                            "confidence": entry.confidence,
-                        },
-                    )
+            add_texts(
+                collection=MEMORY_COLLECTION,
+                texts=[entry.fact],
+                metadatas=[
+                    {
+                        "session_id": entry.session_id,
+                        "category": entry.category,
+                        "memory_id": str(entry.id),
+                        "confidence": entry.confidence,
+                    }
                 ],
                 ids=[entry.embedding_id],
+                client_id=entry.client_id,
             )
         except Exception as e:
             logger.warning(f"Could not re-embed updated memory: {e}")
@@ -212,10 +199,9 @@ def delete_memory(db: Session, memory_id: int) -> bool:
 
     if entry.embedding_id:
         try:
-            vectorstore = get_memory_vectorstore()
-            vectorstore.delete(ids=[entry.embedding_id])
+            delete_ids([entry.embedding_id])
         except Exception as e:
-            logger.warning(f"Could not delete from ChromaDB: {e}")
+            logger.warning(f"Could not delete memory vector: {e}")
 
     db.delete(entry)
     db.commit()

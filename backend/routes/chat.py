@@ -8,8 +8,7 @@ from memory.extractor import extract_memories_from_conversation
 from rag.retriever import retrieve_relevant_chunks, format_context_from_docs
 from services.llm import get_llm
 from services.cache import cache_get, cache_set, cache_del
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.runnable import RunnableSequence
+from langchain_core.prompts import ChatPromptTemplate
 import uuid
 import json
 import logging
@@ -199,7 +198,7 @@ async def chat(
 
     prompt = ChatPromptTemplate.from_messages(prompt_messages)
 
-    model_name = request.model or settings.OLLAMA_MODEL
+    model_name = request.model
 
     if request.stream:
         # Streaming response
@@ -214,6 +213,9 @@ async def chat(
                     "type": "metadata",
                     "session_id": session_id,
                     "memories_used": len(memories),
+                    # The facts themselves, so the client can show which
+                    # entries in the record this answer drew on.
+                    "memories": memories,
                     "docs_retrieved": docs_retrieved,
                     "citations": citations,
                 })

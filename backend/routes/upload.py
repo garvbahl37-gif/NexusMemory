@@ -61,8 +61,12 @@ async def upload_document(
 
         logger.info(f"Saved file: {safe_filename}")
 
-        # Load document
+        # Load document. The file on disk carries a uuid prefix to avoid
+        # collisions, so citations are re-labelled with the name the user
+        # actually uploaded.
         documents = load_document(str(file_path))
+        for doc in documents:
+            doc.metadata["source"] = file.filename
 
         if not documents:
             raise HTTPException(
@@ -82,7 +86,7 @@ async def upload_document(
         # Create collection name
         collection_name = create_collection_name(file.filename, session_id)
 
-        # Store embeddings (pgvector or Chroma)
+        # Embed and store the chunks
         store_chunks(chunks=chunks, collection_name=collection_name)
 
         # Persist the raw file to Supabase Storage (if configured)

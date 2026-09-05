@@ -1,5 +1,4 @@
-from langchain_ollama import OllamaLLM
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from services.llm import get_llm
 import json
 import logging
@@ -37,7 +36,7 @@ Only return the JSON array, nothing else.""",
 
 def extract_memories_from_conversation(
     messages: list[dict],
-    llm: OllamaLLM = None,
+    llm=None,
 ) -> list[dict]:
     """
     Extract important facts from recent conversation using LLM.

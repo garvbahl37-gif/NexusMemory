@@ -1,26 +1,14 @@
 import os
-os.environ["ANONYMIZED_TELEMETRY"] = "false"
-os.environ["CHROMA_TELEMETRY"]     = "false"
-os.environ["POSTHOG_DISABLED"]     = "true"
-
-try:
-    import posthog
-    posthog.disabled = True
-    posthog.capture = lambda *args, **kwargs: None
-except Exception:
-    pass
-
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import logging
 
 from config import settings
 from database import init_db
 from routes import chat, upload, memory
-from services.llm import check_llm_health
+from services.llm import check_llm_health, list_available_models, default_model
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,58 +18,62 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+# A serverless instance runs lifespan on every cold start, so schema creation
+# is done once per process and never blocks the first request from serving.
+_schema_ready = False
+
+
+def ensure_schema():
+    global _schema_ready
+    if _schema_ready:
+        return
+    try:
+        init_db()
+        _schema_ready = True
+        logger.info("Database ready")
+    except Exception as e:
+        logger.error(f"Database init failed: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    logger.info("🚀 Starting Nexus Memory API...")
+    logger.info(f"Starting {settings.APP_NAME} {settings.APP_VERSION}")
+    ensure_schema()
 
-    # Initialize database (don't crash the whole app if the DB is briefly down)
-    try:
-        init_db()
-        logger.info("✅ Database initialized")
-    except Exception as e:
-        logger.error(f"⚠️  Database init failed: {e}")
-
-    # Check LLM provider health (Groq or Ollama)
     health = await check_llm_health()
     if health["status"] == "healthy":
-        provider = health.get("provider", "ollama")
-        logger.info(f"✅ LLM ready ({provider}) | Models: {health['models']}")
+        logger.info(
+            f"Chat ready via {health['provider']} ({health.get('current_model')})"
+        )
     else:
-        logger.warning(f"⚠️  LLM check failed: {health.get('error')}")
-        logger.warning("   Set GROQ_API_KEY, or run Ollama: ollama serve")
-
-    logger.info(f"✅ Nexus Memory ready on http://{settings.HOST}:{settings.PORT}")
+        logger.warning(f"No chat provider reachable: {health.get('error')}")
+        logger.warning("Set OLLAMA_API_KEY or GROQ_API_KEY, or run: ollama serve")
 
     yield
 
-    # Shutdown
-    logger.info("Shutting down Nexus Memory...")
+    logger.info("Shutting down")
 
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Local AI Assistant with Persistent Memory and PDF Chat",
+    description="AI assistant with persistent memory and document chat",
     lifespan=lifespan,
 )
 
-# CORS Configuration
-# Set CORS_ORIGINS env var to a comma-separated list to restrict origins.
-# Defaults to "*" so the hosted Space (and its Swagger UI) is reachable.
+# Set CORS_ORIGINS to a comma-separated list to restrict origins. Defaults to
+# "*" so the deployed API stays reachable from any frontend deployment.
 _cors_env = os.environ.get("CORS_ORIGINS", "*")
 _cors_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    # allow_credentials must be False when origins is "*" (browser rule).
+    # Browsers reject credentials alongside a wildcard origin.
     allow_credentials="*" not in _cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Routes
 app.include_router(chat.router, tags=["Chat"])
 app.include_router(upload.router, tags=["Documents"])
 app.include_router(memory.router, tags=["Memory"])
@@ -96,15 +88,51 @@ async def root():
     }
 
 
+@app.get("/models")
+async def models():
+    """Models the client may pick, each tagged with the provider serving it."""
+    return {
+        "models": list_available_models(),
+        "default": default_model(),
+    }
+
+
 @app.get("/health")
 async def health_check():
-    llm_status = await check_llm_health()
     from services.cache import cache_status
+    from services.embeddings_provider import resolve_provider
+
+    llm_status = await check_llm_health()
     return {
         "api": "healthy",
-        "ollama": llm_status,  # key kept for frontend compatibility
+        "llm": llm_status,
+        # Key kept for older frontend builds that read `ollama`.
+        "ollama": llm_status,
         "model": llm_status.get("current_model"),
+        "embeddings": {"provider": resolve_provider()},
         "cache": cache_status(),
+    }
+
+
+@app.get("/health/deep")
+async def health_deep():
+    """Health that actually exercises the DB and the embedding provider."""
+    from services.embeddings_provider import embeddings_health
+    from database import engine
+    from sqlalchemy import text
+
+    db = {"status": "healthy"}
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        db = {"status": "unhealthy", "error": str(e)[:200]}
+
+    return {
+        "api": "healthy",
+        "database": db,
+        "embeddings": embeddings_health(),
+        "llm": await check_llm_health(),
     }
 
 

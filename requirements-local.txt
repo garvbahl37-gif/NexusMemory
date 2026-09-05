@@ -1,0 +1,7 @@
+# The serverless set plus the in-process extras only a long-lived container can
+# afford: local CPU embeddings, and a local `ollama serve` as a chat provider.
+-r requirements.txt
+
+uvicorn[standard]==0.38.0
+sentence-transformers==5.1.2
+langchain-ollama==1.1.1

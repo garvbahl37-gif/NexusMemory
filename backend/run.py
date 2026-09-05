@@ -22,7 +22,6 @@ if __name__ == "__main__":
             "*.db",
             "*.db-shm",
             "*.db-wal",
-            "chroma_db/*",
             "uploads/*",
             "*.log",
         ],
